@@ -1,15 +1,16 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { api, GrainYield } from '@/src/lib/api';
+import { api, GrainYield, BeanGuess } from '@/src/lib/api';
 import styles from '@/src/styles/farm.module.css';
 
 export default function SoybeansPage() {
   // ── Data from backend ──────────────────────────────────────────────────
-  const [yieldData, setYieldData]   = useState<GrainYield[]>([]);
-  const [userYields, setUserYields] = useState<Record<string, number>>({});
-  const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState('');
+  const [yieldData, setYieldData]     = useState<GrainYield[]>([]);
+  const [estimates, setEstimates]     = useState<BeanGuess[]>([]);
+  const [userYields, setUserYields]   = useState<Record<string, number>>({});
+  const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState('');
 
   // ── Submission form ────────────────────────────────────────────────────
   const [name, setName]             = useState('');
@@ -28,8 +29,8 @@ export default function SoybeansPage() {
       }
     } catch {}
 
-    api.getBeans()
-      .then(data => {
+    Promise.all([api.getBeans(), api.getBeanEstimates()])
+      .then(([data, ests]) => {
         const sorted = [...data].sort((a, b) => (b.acres ?? 0) - (a.acres ?? 0));
         setYieldData(sorted);
         const initial: Record<string, number> = {};
@@ -38,6 +39,7 @@ export default function SoybeansPage() {
           initial[key] = row.yield;
         });
         setUserYields(initial);
+        setEstimates(ests);
       })
       .catch(() => setError('Could not reach AgriServer on port 8081. Start the server and refresh.'))
       .finally(() => setLoading(false));
@@ -90,6 +92,8 @@ export default function SoybeansPage() {
         userId:        user?.userId ?? 0,
       });
       setSubmitMsg({ ok: true, text: `Your estimate of ${nationalEstimate} bu/ac was submitted!` });
+      const updated = await api.getBeanEstimates();
+      setEstimates(updated);
     } catch {
       setSubmitMsg({ ok: false, text: 'Submit failed — check the server connection and try again.' });
     } finally {
@@ -306,27 +310,44 @@ export default function SoybeansPage() {
             </div>
           </div>
 
-          {/* ── Info note about community guesses ── */}
-          <div style={{
-            background: '#fff',
-            border: '1px solid #ddd8cc',
-            borderRadius: 8,
-            padding: '1rem 1.25rem',
-            fontFamily: 'Lato, sans-serif',
-            fontSize: '.82rem',
-            color: '#888',
-            lineHeight: 1.6,
-          }}>
-            <strong style={{ color: '#2c4a1e', display: 'block', marginBottom: '.3rem' }}>
-              ℹ️ Community Guesses
-            </strong>
-            The server stores soybean guesses but doesn&apos;t yet expose a
-            &ldquo;get all bean estimates&rdquo; endpoint. Add a{' '}
-            <code style={{ background: '#f4f0e8', padding: '1px 5px', borderRadius: 3, fontSize: '.8rem' }}>
-              GET /beanestimates
-            </code>{' '}
-            endpoint to AgriServer (mirroring <code style={{ background: '#f4f0e8', padding: '1px 5px', borderRadius: 3, fontSize: '.8rem' }}>/cornestimates</code>)
-            and the feed will appear here automatically.
+          {/* ── Community guesses ── */}
+          <div className={styles.section}>
+            <div className={styles.sectionHead}>
+              <span>👥</span>
+              <h2>Community Guesses</h2>
+              {estimates.length > 0 && (
+                <span style={{
+                  marginLeft: 'auto',
+                  background: '#8fbc45',
+                  color: '#1a2e0f',
+                  borderRadius: 12,
+                  padding: '0 .6rem',
+                  fontSize: '.72rem',
+                  fontWeight: 700,
+                  fontFamily: 'Lato, sans-serif',
+                }}>
+                  {estimates.length} guess{estimates.length !== 1 ? 'es' : ''}
+                </span>
+              )}
+            </div>
+
+            <div style={{ maxHeight: '28vh', overflowY: 'auto' }}>
+              {estimates.length === 0 ? (
+                <p className={styles.empty}>No guesses yet — be the first!</p>
+              ) : (
+                estimates.map((e, i) => (
+                  <div key={e.id ?? i} className={styles.guessCard}>
+                    <div style={{ flex: 1 }}>
+                      <div className={styles.guessName}>Estimate #{i + 1}</div>
+                      <div className={styles.guessMeta}>
+                        State est: {e.myState} bu/ac
+                      </div>
+                    </div>
+                    <div className={styles.guessValue}>{e.nationalGuess}</div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
 
         </div>

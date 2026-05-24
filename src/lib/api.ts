@@ -107,6 +107,7 @@ export const api = {
     }),
 
   getBeans: () => get<GrainYield[]>('/beans'),
+  getBeanEstimates: () => get<BeanGuess[]>('/beanestimates'),
   addBeanGuess: (body: Omit<BeanGuess, 'id'>) =>
     fetch(`${BASE}/beanGuess`, {
       method: 'POST',
