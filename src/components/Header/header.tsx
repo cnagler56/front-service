@@ -1,27 +1,23 @@
-import React from "react";
+'use client';
 
-const capitalizeFirstLetter = (string: String) => {
-  return string.charAt(0).toUpperCase() + string.slice(1);
-};
+import React, { useEffect, useState } from "react";
 
-interface tokenObject {
-  firstName: String;
-  lastName: String;
-}
+const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '');
 
 const Header = () => {
-  const tokenObject = {
-    firstName: "Chris",
-    lastName: "Nagel",
-  };
+  const [welcomeMessage, setWelcomeMessage] = useState('');
 
-  let welcomeMessage;
-
-  if (tokenObject) {
-    const capitalizedFirstName = capitalizeFirstLetter(tokenObject.firstName);
-    const capitalizedLastName = capitalizeFirstLetter(tokenObject.lastName);
-    welcomeMessage = `Welcome, ${capitalizedFirstName} ${capitalizedLastName}`;
-  }
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('agri_user');
+      if (stored) {
+        const user = JSON.parse(stored);
+        const first = cap(user.firstName ?? '');
+        const last = cap(user.lastName ?? '');
+        if (first) setWelcomeMessage(`Welcome, ${first} ${last}`.trim());
+      }
+    } catch {}
+  }, []);
 
   return (
     <>
@@ -70,13 +66,6 @@ const Header = () => {
           line-height: 1;
         }
 
-        .farm-divider {
-          width: 1px;
-          height: 28px;
-          background: linear-gradient(to bottom, transparent, #8fbc4566, transparent);
-          margin: 0 0.75rem;
-        }
-
         .farm-welcome {
           font-family: 'Lato', sans-serif;
           font-weight: 300;
@@ -107,7 +96,7 @@ const Header = () => {
           <span className="leaf-icon">🌿</span>
           Just4Ag
         </h1>
-        <div className="farm-welcome">{welcomeMessage}</div>
+        {welcomeMessage && <div className="farm-welcome">{welcomeMessage}</div>}
       </header>
     </>
   );
