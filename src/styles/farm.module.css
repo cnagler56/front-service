@@ -175,6 +175,134 @@
   font-size: .9rem;
 }
 
+/* ── Corn page two-column layout ── */
+.cornLayout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .cornLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Corn page: live estimate display ── */
+.estimateDisplay {
+  background: linear-gradient(135deg, #2c4a1e, #3d6b2a);
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, .2);
+}
+
+.estimateLabel {
+  font-family: 'Lato', sans-serif;
+  font-size: .72rem;
+  color: #a8cc78;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  margin: 0 0 .5rem;
+}
+
+.estimateValue {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 3.2rem;
+  font-weight: 700;
+  color: #f0f7e6;
+  line-height: 1;
+  margin: .25rem 0;
+}
+
+.estimateUnit {
+  font-family: 'Lato', sans-serif;
+  font-size: .82rem;
+  color: #8fbc45;
+  margin: .5rem 0 0;
+}
+
+/* ── Corn table ── */
+.cornTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .875rem;
+}
+
+.cornTable th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #2c4a1e;
+  color: #f0f7e6;
+  padding: .5rem .9rem;
+  text-align: left;
+  font-size: .7rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.cornTable td {
+  padding: .4rem .7rem;
+  border-bottom: 1px solid #eee;
+}
+
+.cornTable tr:nth-child(even) td { background: #f9fdf4; }
+.cornTable tr:hover td { background: #f0fdf4; }
+
+.stateInput {
+  width: 72px;
+  padding: .3rem .5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: .875rem;
+  font-family: 'Lato', sans-serif;
+  color: #333;
+  outline: none;
+  transition: border-color .15s, background .15s;
+}
+
+.stateInput:focus { border-color: #8fbc45; box-shadow: 0 0 0 2px rgba(143,188,69,.2); }
+.stateInputModified { border-color: #8fbc45; background: #f0fdf4; }
+
+.diffUp   { font-size: .7rem; color: #27ae60; font-weight: 700; min-width: 32px; }
+.diffDown { font-size: .7rem; color: #e74c3c; font-weight: 700; min-width: 32px; }
+
+/* ── Guess card in community list ── */
+.guessCard {
+  display: flex;
+  align-items: center;
+  padding: .65rem 1rem;
+  border-bottom: 1px solid #f0ede8;
+  transition: background .15s;
+}
+
+.guessCard:hover { background: #f9fdf4; }
+.guessCard:last-child { border-bottom: none; }
+
+.guessName {
+  font-family: 'Lato', sans-serif;
+  font-weight: 700;
+  font-size: .875rem;
+  color: #2c4a1e;
+}
+
+.guessMeta {
+  font-family: 'Lato', sans-serif;
+  font-size: .75rem;
+  color: #888;
+}
+
+.guessValue {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #3d6b2a;
+  margin-left: auto;
+}
+
 /* ── Weather card grid ── */
 .weatherGrid {
   display: grid;
