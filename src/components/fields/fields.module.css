@@ -1,0 +1,121 @@
+/* ── Field card ─────────────────────────────────────────────────── */
+.fieldCard {
+  background: #fff;
+  border: 1px solid #ddd8cc;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, .05);
+  padding: 1.1rem 1.25rem;
+  transition: transform .15s, box-shadow .15s;
+}
+.fieldCard:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, .07);
+}
+
+.fieldHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.fieldTitle {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+}
+.fieldIcon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+.fieldTitle h3 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1.15rem;
+  color: #2c4a1e;
+  margin: 0;
+}
+.fieldSub {
+  margin: .1rem 0 0;
+  font-family: 'Lato', sans-serif;
+  font-size: .8rem;
+  color: #444;
+}
+.fieldActions {
+  display: flex;
+  gap: .25rem;
+}
+.iconBtn {
+  background: none;
+  border: 1px solid #e5dfcc;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: .2rem .45rem;
+  font-size: 1rem;
+  transition: background .15s, border-color .15s;
+}
+.iconBtn:hover {
+  background: #f7faf2;
+  border-color: #8fbc45;
+}
+
+/* Stat grid */
+.fieldStats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: .5rem;
+  background: #fdfaf4;
+  border: 1px solid #e1dccc;
+  border-radius: 6px;
+  padding: .65rem .75rem;
+}
+@media (max-width: 540px) {
+  .fieldStats { grid-template-columns: repeat(2, 1fr); }
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  font-family: 'Lato', sans-serif;
+}
+.statLabel {
+  font-size: .62rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #6a7a55;
+  font-weight: 600;
+}
+.statValue {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1a2e0f;
+  line-height: 1.15;
+}
+.statHint {
+  font-size: .65rem;
+  color: #b91c1c;
+  font-style: italic;
+}
+
+.fieldNotes {
+  margin: .85rem 0 0;
+  font-family: 'Lato', sans-serif;
+  font-size: .85rem;
+  color: #555;
+  line-height: 1.55;
+  padding-left: .65rem;
+  border-left: 3px solid #c9dfa3;
+}
+
+/* Inline link-style button */
+.linkBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #2c4a1e;
+  text-decoration: underline;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 600;
+}
+.linkBtn:hover { color: #8fbc45; }

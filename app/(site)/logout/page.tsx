@@ -9,6 +9,7 @@ export default function LogoutPage() {
   useEffect(() => {
     localStorage.removeItem('agri_user');
     localStorage.removeItem('token');
+    window.dispatchEvent(new Event('agri-auth-changed'));
     router.push('/signin');
   }, [router]);
 

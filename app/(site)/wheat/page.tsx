@@ -3,14 +3,14 @@
 import CommodityDashboard from '@/src/components/commodity/CommodityDashboard';
 import styles from '@/src/styles/farm.module.css';
 
-export default function SoybeansPage() {
+export default function WheatPage() {
   return (
     <div className={styles.page}>
       <CommodityDashboard
-        commodity="SOYBEANS"
-        commodityLabel="Soybeans"
-        commodityIcon="🫘"
-        pricesGroupName="Soybeans"
+        commodity="WHEAT"
+        commodityLabel="Wheat"
+        commodityIcon="🌾"
+        pricesGroupName="Wheat"
       />
     </div>
   );

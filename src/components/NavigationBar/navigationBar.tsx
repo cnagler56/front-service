@@ -1,15 +1,25 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export const NavigationBar = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    setIsLoggedIn(!!token);
-  }, []);
+    const check = () => setIsLoggedIn(!!localStorage.getItem("token"));
+    check();
+    // Same-tab updates: signin / signup / logout pages dispatch this
+    window.addEventListener("agri-auth-changed", check);
+    // Other-tab updates: e.g. user logs out in a different tab
+    window.addEventListener("storage", check);
+    return () => {
+      window.removeEventListener("agri-auth-changed", check);
+      window.removeEventListener("storage", check);
+    };
+  }, [pathname]);
 
   return (
     <>
@@ -112,6 +122,12 @@ export const NavigationBar = () => {
             <Link href="/soybeans">Soybeans</Link>
           </li>
           <li>
+            <Link href="/wheat">Wheat</Link>
+          </li>
+          <li>
+            <Link href="/usda-reports">USDA Reports</Link>
+          </li>
+          <li>
             <Link href="/cattle">Cattle</Link>
           </li>
           <li>
@@ -124,7 +140,19 @@ export const NavigationBar = () => {
             <Link href="/usda">USDA</Link>
           </li>
           <li>
+            <Link href="/cropprogress">Crop Progress</Link>
+          </li>
+          <li>
+            <Link href="/calculators">Calculators</Link>
+          </li>
+          <li>
+            <Link href="/fields">My Fields</Link>
+          </li>
+          <li>
             <Link href="/weather">Weather</Link>
+          </li>
+          <li>
+            <Link href="/forecast-change">Change in Forecast</Link>
           </li>
           <li>
             <Link href="/nws">NWS</Link>

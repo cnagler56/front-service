@@ -64,6 +64,116 @@
   background: #fdfaf4;
 }
 
+/* ── Commodity price cards (CommodityPrices) ── */
+.priceGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 1rem;
+  width: 100%;
+}
+
+/* "Jul 2026 (front)" line just under the commodity name */
+.priceExp {
+  font-family: 'Lato', sans-serif;
+  font-size: .7rem;
+  font-weight: 700;
+  color: #6a7a55;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  margin-top: -.15rem;
+}
+
+/* Deferred-contracts mini table */
+.contractsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Lato', sans-serif;
+  font-size: .78rem;
+  margin-top: .65rem;
+  border-top: 1px solid #e1dccc;
+}
+.contractsTable th {
+  font-weight: 700;
+  text-align: left;
+  color: #6a7a55;
+  text-transform: uppercase;
+  font-size: .62rem;
+  letter-spacing: .05em;
+  padding: .45rem .25rem .25rem;
+  border-bottom: 1px solid #ece6d4;
+}
+.contractsTable th:nth-child(2),
+.contractsTable th:nth-child(3),
+.contractsTable td:nth-child(2),
+.contractsTable td:nth-child(3) {
+  text-align: right;
+}
+.contractsTable td {
+  padding: .35rem .25rem;
+  border-bottom: 1px solid #f4efe1;
+  color: #444;
+}
+.contractsTable tr:last-child td { border-bottom: none; }
+.contractsTable td:first-child {
+  color: #2c4a1e;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.priceCard {
+  background: #fdfaf4;
+  border: 1px solid #e1dccc;
+  border-radius: 6px;
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  transition: transform .15s, box-shadow .15s;
+}
+.priceCard:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .06);
+}
+.priceCardHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .5rem;
+}
+.priceName {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 700;
+  color: #2c4a1e;
+  font-size: 1rem;
+}
+.priceUnit {
+  font-family: 'Lato', sans-serif;
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: #888;
+}
+.priceValue {
+  font-family: 'Lato', sans-serif;
+  font-weight: 700;
+  font-size: 1.7rem;
+  color: #1a2e0f;
+  line-height: 1.1;
+}
+.priceChange {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  font-family: 'Lato', sans-serif;
+  font-size: .85rem;
+  font-weight: 600;
+}
+.priceError {
+  color: #aaa;
+  font-size: 1.3rem;
+  text-align: center;
+  padding: .5rem 0;
+}
+
 /* Two-column layout variant (used by WeatherConditions) */
 .twoCol {
   display: grid;
