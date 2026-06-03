@@ -1,21 +1,5 @@
-'use client';
+import LogoutPage from '@/src/components/auth/LogoutPage';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-
-export default function LogoutPage() {
-  const router = useRouter();
-
-  useEffect(() => {
-    localStorage.removeItem('agri_user');
-    localStorage.removeItem('token');
-    window.dispatchEvent(new Event('agri-auth-changed'));
-    router.push('/signin');
-  }, [router]);
-
-  return (
-    <p style={{ padding: '2rem', textAlign: 'center', fontFamily: 'Lato, sans-serif', color: '#666' }}>
-      Signing out…
-    </p>
-  );
+export default function Page() {
+  return <LogoutPage />;
 }

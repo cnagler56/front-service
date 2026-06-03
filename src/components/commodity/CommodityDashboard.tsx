@@ -35,6 +35,16 @@ function fmtNum(n: number | null | undefined, digits = 1): string {
   return n.toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: digits });
 }
 
+/**
+ * Price formatter — no thousands separator. Futures contracts trade in cents
+ * (corn ~445, soybeans ~1188.75) and quoting them with commas confuses readers
+ * who expect to see the raw quote line.
+ */
+function fmtPrice(n: number | null | undefined): string {
+  if (n == null || !isFinite(n)) return '—';
+  return n.toFixed(2);
+}
+
 function fmtWeek(iso: string): string {
   if (!iso) return '';
   const [, m, d] = iso.split('-');
@@ -220,7 +230,7 @@ export default function CommodityDashboard({
               <div className={styles.frontPrice}>
                 <div className={styles.frontLabel}>{frontPrice.expiration} (front)</div>
                 <div className={styles.frontValue}>
-                  {fmtNum(frontPrice.last, 2)} <span className={styles.unitLabel}>{prices?.unit}</span>
+                  {fmtPrice(frontPrice.last)} <span className={styles.unitLabel}>{prices?.unit}</span>
                 </div>
                 <ChangePill change={frontPrice.change ?? null} pct={frontPrice.changePercent ?? null} />
               </div>
@@ -228,7 +238,7 @@ export default function CommodityDashboard({
                 {(prices?.contracts ?? []).slice(1).map(c => (
                   <div key={c.symbol} className={styles.deferredRow}>
                     <span className={styles.deferredExp}>{c.expiration}</span>
-                    <span className={styles.deferredLast}>{fmtNum(c.last, 2)}</span>
+                    <span className={styles.deferredLast}>{fmtPrice(c.last)}</span>
                     <ChangePill compact change={c.change ?? null} pct={null} />
                   </div>
                 ))}
@@ -419,7 +429,7 @@ function ChangePill({
   const cls = up ? styles.changeUp : down ? styles.changeDown : styles.changeFlat;
   return (
     <span className={`${cls} ${compact ? styles.compact : ''}`}>
-      {arrow} {Math.abs(change).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+      {arrow} {Math.abs(change).toFixed(2)}
       {pct != null && !compact && (
         <span style={{ marginLeft: '.4rem', opacity: .85 }}>
           ({pct > 0 ? '+' : ''}{pct.toFixed(2)}%)

@@ -98,7 +98,7 @@ function CommodityCard({ group }) {
       ) : (
         <>
           <div className={styles.priceValue}>
-            {front.last != null ? front.last.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—'}
+            {front.last != null ? front.last.toFixed(2) : '—'}
           </div>
           <div className={styles.priceChange} style={{ color: tone }}>
             <span>{arrow}</span>
@@ -135,7 +135,7 @@ function CommodityCard({ group }) {
                   <td>
                     {c.error || c.last == null
                       ? '—'
-                      : c.last.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                      : c.last.toFixed(2)}
                   </td>
                   <td style={{ color: cTone, fontWeight: 600 }}>
                     {c.change == null ? '—' : formatSigned(c.change)}
@@ -151,7 +151,10 @@ function CommodityCard({ group }) {
 }
 
 function formatSigned(n) {
-  const v = Math.abs(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
+  // toFixed(2) intentionally — no thousands separator for futures quotes.
+  // Day changes are small enough that this never matters numerically, but
+  // keeps formatting consistent with the price values above.
+  const v = Math.abs(n).toFixed(2);
   return (n > 0 ? '+' : n < 0 ? '−' : '') + v;
 }
 

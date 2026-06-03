@@ -24,6 +24,15 @@ function fmtNum(n: number | null | undefined, digits = 0): string {
   });
 }
 
+/**
+ * Price formatter — no thousands separator. Futures are quoted without commas
+ * in market data feeds and most farmers expect to see "1188.75" not "1,188.75".
+ */
+function fmtPrice(n: number | null | undefined): string {
+  if (n == null || !isFinite(n)) return '—';
+  return n.toFixed(2);
+}
+
 function parseInventory(v: string | null | undefined): number | null {
   if (!v) return null;
   const n = parseFloat(String(v).replace(/,/g, ''));
@@ -171,7 +180,7 @@ export default function LivestockDashboard({
               <div className={styles.frontPrice}>
                 <div className={styles.frontLabel}>{frontPrice.expiration} (front)</div>
                 <div className={styles.frontValue}>
-                  {fmtNum(frontPrice.last, 2)} <span className={styles.unitLabel}>{prices?.unit}</span>
+                  {fmtPrice(frontPrice.last)} <span className={styles.unitLabel}>{prices?.unit}</span>
                 </div>
                 <ChangePill change={frontPrice.change ?? null} pct={frontPrice.changePercent ?? null} />
               </div>
@@ -179,7 +188,7 @@ export default function LivestockDashboard({
                 {(prices?.contracts ?? []).slice(1).map(c => (
                   <div key={c.symbol} className={styles.deferredRow}>
                     <span className={styles.deferredExp}>{c.expiration}</span>
-                    <span className={styles.deferredLast}>{fmtNum(c.last, 2)}</span>
+                    <span className={styles.deferredLast}>{fmtPrice(c.last)}</span>
                     <ChangePill compact change={c.change ?? null} pct={null} />
                   </div>
                 ))}
@@ -320,7 +329,7 @@ function ChangePill({
   const cls = up ? styles.changeUp : down ? styles.changeDown : styles.changeFlat;
   return (
     <span className={`${cls} ${compact ? styles.compact : ''}`}>
-      {arrow} {Math.abs(change).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+      {arrow} {Math.abs(change).toFixed(2)}
       {pct != null && !compact && (
         <span style={{ marginLeft: '.4rem', opacity: .85 }}>
           ({pct > 0 ? '+' : ''}{pct.toFixed(2)}%)

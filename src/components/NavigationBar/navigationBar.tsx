@@ -155,6 +155,9 @@ export const NavigationBar = () => {
             <Link href="/forecast-change">Change in Forecast</Link>
           </li>
           <li>
+            <Link href="/forecast-map">Forecast Map</Link>
+          </li>
+          <li>
             <Link href="/nws">NWS</Link>
           </li>
           <li>

@@ -1,12 +1,11 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { ForecastDay, ForecastLocation, ForecastSnapshot } from '@/src/lib/api';
 import styles from './forecastChange.module.css';
 
 interface Props {
   location: ForecastLocation;
-  onRefresh: () => Promise<void>;
   onEdit: () => void;
   onDelete: () => void;
 }
@@ -70,25 +69,10 @@ function indexByDay(snap: ForecastSnapshot | null): Map<string, ForecastDay> {
   return map;
 }
 
-export default function ForecastDiffCard({ location, onRefresh, onEdit, onDelete }: Props) {
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState('');
-
+export default function ForecastDiffCard({ location, onEdit, onDelete }: Props) {
   const current = useMemo(() => parseSnap(location.currentSnapshotJson), [location.currentSnapshotJson]);
   const previous = useMemo(() => parseSnap(location.previousSnapshotJson), [location.previousSnapshotJson]);
   const prevByDay = useMemo(() => indexByDay(previous), [previous]);
-
-  async function handleRefresh() {
-    setRefreshing(true);
-    setError('');
-    try {
-      await onRefresh();
-    } catch {
-      setError('Refresh failed. Try again in a moment.');
-    } finally {
-      setRefreshing(false);
-    }
-  }
 
   return (
     <div className={styles.locCard}>
@@ -108,19 +92,14 @@ export default function ForecastDiffCard({ location, onRefresh, onEdit, onDelete
           </p>
         </div>
         <div className={styles.locActions}>
-          <button type="button" onClick={handleRefresh} className={styles.refreshBtn} disabled={refreshing}>
-            {refreshing ? 'Refreshing…' : '🔄 Refresh'}
-          </button>
           <button type="button" onClick={onEdit}   className={styles.iconBtn} title="Edit">✏️</button>
           <button type="button" onClick={onDelete} className={styles.iconBtn} title="Delete">🗑️</button>
         </div>
       </div>
 
-      {error && <p className={styles.error}>{error}</p>}
-
-      {!current && !refreshing && (
+      {!current && (
         <p className={styles.empty}>
-          No forecast snapshot yet — click <strong>🔄 Refresh</strong> to take the first one.
+          No forecast snapshot yet — use <strong>🔄 Refresh All</strong> at the top of the page to take the first one.
         </p>
       )}
 

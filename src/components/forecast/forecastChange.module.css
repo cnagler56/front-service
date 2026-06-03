@@ -1,10 +1,25 @@
+/*
+ * Two-column grid of locations. Cards are half-width on desktop and stack
+ * to single-column when the viewport gets too narrow to fit the day-grid
+ * inside one card column (~700px breakpoint).
+ */
+.locationsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+@media (max-width: 900px) {
+  .locationsGrid { grid-template-columns: 1fr; }
+}
+
 .locCard {
   background: #fff;
   border: 1px solid #ddd8cc;
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, .05);
   padding: 1.1rem 1.25rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 0;       /* gap on the grid handles spacing */
+  min-width: 0;           /* let the day-grid shrink rather than overflow */
 }
 
 .locHead {
@@ -31,20 +46,6 @@
   align-items: center;
   gap: .35rem;
 }
-.refreshBtn {
-  background: #2c4a1e;
-  color: #f0f7e6;
-  border: 0;
-  border-radius: 4px;
-  padding: .45rem .8rem;
-  font-family: 'Lato', sans-serif;
-  font-size: .8rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background .15s;
-}
-.refreshBtn:hover:not(:disabled) { background: #3d6b2a; }
-.refreshBtn:disabled { background: #6a7a55; cursor: wait; }
 .iconBtn {
   background: none;
   border: 1px solid #e5dfcc;
@@ -81,10 +82,10 @@
   border-radius: 4px;
 }
 
-/* Day grid */
+/* Day grid — tighter columns so 10 rows fit comfortably in a half-width card */
 .dayGrid {
   display: grid;
-  grid-template-columns: 110px 95px 95px 95px 1fr;
+  grid-template-columns: 95px 75px 75px 75px 1fr;
   gap: 0;
   border: 1px solid #e1dccc;
   border-radius: 6px;
@@ -98,11 +99,11 @@
 }
 .headerRow span,
 .dayRow > span {
-  padding: .55rem .65rem;
+  padding: .45rem .55rem;
   border-bottom: 1px solid #f0ebdc;
   display: flex;
   align-items: center;
-  gap: .5rem;
+  gap: .35rem;
 }
 .dayRow:last-child > span { border-bottom: none; }
 
@@ -119,12 +120,12 @@
 .dayName {
   font-weight: 700;
   color: #2c4a1e;
-  font-size: .95rem;
+  font-size: .85rem;
   background: #fafafa;
 }
 
 .cell {
-  font-size: .95rem;
+  font-size: .9rem;
   color: #1a2e0f;
   transition: background .25s;
 }
@@ -139,11 +140,12 @@
 }
 
 .dayShort {
-  font-size: .85rem;
+  font-size: .78rem;
   color: #444;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 
 @media (max-width: 720px) {

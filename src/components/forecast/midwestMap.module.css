@@ -1,0 +1,167 @@
+.mapWrap {
+  background: #fdfaf4;
+  border: 1px solid #e1dccc;
+  border-radius: 8px;
+  padding: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Top row: metric selector + legend */
+.metricBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  padding: .35rem .25rem .75rem;
+  margin-bottom: .25rem;
+  font-family: 'Lato', sans-serif;
+}
+.metricLabel {
+  font-size: .68rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: #6a7a55;
+  font-weight: 700;
+}
+.legend {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  margin-left: auto;
+  font-size: .7rem;
+  color: #555;
+  font-weight: 600;
+}
+.legendLabel {
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  font-size: .65rem;
+  color: #6a7a55;
+}
+.legendBar {
+  display: flex;
+  width: 180px;
+  height: 12px;
+  border-radius: 2px;
+  overflow: hidden;
+  border: 1px solid #d8d3c4;
+}
+.legendBar span {
+  flex: 1;
+  display: block;
+}
+
+.mapSvg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* State polygons */
+.statePath {
+  fill: #f0f7e6;
+  stroke: #6a7a55;
+  stroke-width: 0.7;
+  transition: fill .15s;
+}
+.statePath:hover {
+  fill: #e1efc9;
+}
+
+/* State name labels */
+.stateLabel {
+  font-family: 'Lato', sans-serif;
+  font-size: 11px;
+  fill: #6a7a55;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Location markers — fill set inline based on the selected metric's delta */
+.marker {
+  stroke: #fff;
+  stroke-width: 2;
+  cursor: pointer;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.35));
+  transition: r .12s, fill .12s;
+}
+.markerHover {
+  stroke: #1a2e0f;
+  stroke-width: 2.5;
+}
+
+/* Hover tooltip */
+.tooltip {
+  z-index: 1000;
+  background: #fff;
+  border: 1px solid #ddd8cc;
+  border-radius: 6px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.18);
+  padding: .75rem .85rem;
+  font-family: 'Lato', sans-serif;
+  width: 320px;
+  pointer-events: none;
+}
+.tooltip h4 {
+  margin: 0 0 .15rem;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1rem;
+  color: #2c4a1e;
+}
+.tooltipMeta {
+  margin: 0 0 .55rem;
+  font-size: .72rem;
+  color: #6a7a55;
+}
+.tooltipEmpty {
+  margin: 0;
+  font-size: .8rem;
+  color: #888;
+  font-style: italic;
+}
+.tooltipTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .78rem;
+}
+.tooltipTable th {
+  font-size: .62rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #6a7a55;
+  font-weight: 700;
+  text-align: right;
+  padding: .25rem .45rem;
+  border-bottom: 1px solid #e1dccc;
+}
+.tooltipTable th:first-child { text-align: left; }
+.tooltipTable td {
+  padding: .35rem .45rem;
+  border-bottom: 1px solid #f4efe1;
+  text-align: right;
+  font-weight: 600;
+  color: #1a2e0f;
+  transition: background .15s;
+}
+.tooltipTable td:first-child {
+  text-align: left;
+  color: #2c4a1e;
+}
+.tooltipTable tr:last-child td { border-bottom: none; }
+
+.tooltipDay { font-weight: 700; }
+
+.error {
+  color: #b91c1c;
+  background: rgba(190,50,50,.08);
+  border: 1px solid rgba(190,50,50,.2);
+  border-radius: 4px;
+  padding: .55rem .75rem;
+  font-size: .85rem;
+  margin: 0 0 1rem;
+}
