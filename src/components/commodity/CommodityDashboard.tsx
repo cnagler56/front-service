@@ -8,8 +8,8 @@ import {
   CropProgressData,
   NASSYieldData,
   UsdaYieldReport,
-  User,
 } from '@/src/lib/api';
+import { useUser } from '@/src/lib/UserContext';
 import YieldHistoryChart, { Series, colorFor } from '@/src/components/YieldHistoryChart';
 import styles from './commodityDashboard.module.css';
 
@@ -71,7 +71,7 @@ function nationalAvg(rows: { yieldBu?: number; acres?: number | null }[]): numbe
 export default function CommodityDashboard({
   commodity, commodityLabel, commodityIcon, pricesGroupName,
 }: Props) {
-  const [user, setUser]               = useState<User | null>(null);
+  const { user } = useUser();
   const [prices, setPrices]           = useState<CommodityGroup | null>(null);
   const [yieldReport, setYieldReport] = useState<UsdaYieldReport | null>(null);
   const [progress, setProgress]       = useState<CropProgressData[]>([]);
@@ -83,11 +83,6 @@ export default function CommodityDashboard({
     let cancelled = false;
     setLoading(true);
     setError('');
-
-    try {
-      const stored = typeof window !== 'undefined' ? localStorage.getItem('agri_user') : null;
-      if (stored) setUser(JSON.parse(stored) as User);
-    } catch { /* ignore */ }
 
     const thisYear = new Date().getFullYear();
 

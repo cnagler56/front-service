@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { api, AnimalData, User } from '@/src/lib/api';
+import { api, AnimalData } from '@/src/lib/api';
+import { useUser } from '@/src/lib/UserContext';
 import styles from '@/src/styles/farm.module.css';
 
 /** A category bucket — each row's short_desc is tested against `matches`. */
@@ -52,20 +53,13 @@ export default function LivestockInventoryPanel({
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
   const [fetched, setFetched] = useState(false);
-  const [user, setUser]       = useState<User | null>(null);
+  const { user } = useUser();
 
   // Last 6 years, newest first
   const years = useMemo(
     () => Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i),
     []
   );
-
-  useEffect(() => {
-    try {
-      const stored = typeof window !== 'undefined' ? localStorage.getItem('agri_user') : null;
-      if (stored) setUser(JSON.parse(stored) as User);
-    } catch { /* ignore */ }
-  }, []);
 
   // Reset fetched state on commodity change (when used across tabs)
   useEffect(() => {

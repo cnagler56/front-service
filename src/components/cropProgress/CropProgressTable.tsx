@@ -6,7 +6,6 @@ import styles from '@/src/styles/farm.module.css';
 
 interface Props {
   rows: CropProgressData[];
-  year: number;
   user: User | null;
 }
 
@@ -40,21 +39,16 @@ function fmtWeek(iso: string): string {
 
 /**
  * Crop Progress pivot view — sticky week selector + sticky column headers
- * + sticky-left state column + season trend for the user's state.
+ * + sticky-left state column.
  *
  * Renders WITHOUT a wrapping `.section` (which has `overflow: hidden` and
  * traps `position: sticky`). Instead we use `.sectionOpen` which keeps the
  * card look but lets the sticky bars stick to the viewport.
  */
-export default function CropProgressTable({ rows, year, user }: Props) {
+export default function CropProgressTable({ rows, user }: Props) {
   const [selectedWeek, setSelectedWeek] = useState<string>(() => {
     const weeks = Array.from(new Set(rows.map(r => r.weekEnding).filter(Boolean))).sort();
     return weeks[weeks.length - 1] ?? '';
-  });
-  const [stage, setStage] = useState<string>(() => {
-    const counts = new Map<string, number>();
-    for (const r of rows) counts.set(r.unit, (counts.get(r.unit) ?? 0) + 1);
-    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ?? '';
   });
 
   // Measure the actual height of the sticky week bar so the column headers
@@ -100,17 +94,6 @@ export default function CropProgressTable({ rows, year, user }: Props) {
     }
     return { states, byKey };
   }, [rows, selectedWeek]);
-
-  // Trend across the season for the user's state at the chosen stage
-  const userStateTrend = useMemo(() => {
-    const st = (user?.state ?? '').trim().toUpperCase();
-    if (!st || !stage) return [] as { week: string; value: number }[];
-    return rows
-      .filter(r => r.unit === stage && (r.state ?? '').toUpperCase() === st)
-      .map(r => ({ week: r.weekEnding, value: toNum(r.value) ?? 0 }))
-      .filter(r => Number.isFinite(r.value))
-      .sort((a, b) => a.week.localeCompare(b.week));
-  }, [rows, stage, user]);
 
   return (
     <div className={styles.sectionOpen}>
@@ -177,71 +160,6 @@ export default function CropProgressTable({ rows, year, user }: Props) {
         </tbody>
       </table>
 
-      {/* Season trend for the user's state */}
-      {user?.state && (
-        <div style={{
-          background: '#fdfaf4',
-          border: '1px solid #e1dccc',
-          borderRadius: 6,
-          padding: '1rem',
-          margin: '1.5rem',
-        }}>
-          <h3 style={{
-            fontFamily: 'Playfair Display, Georgia, serif',
-            color: '#2c4a1e',
-            fontSize: '1rem',
-            margin: '0 0 .5rem',
-          }}>
-            {(user.state || '').toUpperCase()} — {stageLabel(stage)} over the {year} season
-          </h3>
-
-          {stages.length > 1 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.35rem', marginBottom: '.75rem' }}>
-              {stages.map(u => (
-                <button
-                  key={u}
-                  type="button"
-                  onClick={() => setStage(u)}
-                  className={`${styles.filterPill} ${stage === u ? styles.filterPillActive : ''}`}
-                >
-                  {stageLabel(u)}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {userStateTrend.length === 0 ? (
-            <p className={styles.empty} style={{ margin: 0 }}>
-              No data reported for {(user.state || '').toUpperCase()} at this stage.
-            </p>
-          ) : (
-            <TrendBars data={userStateTrend} />
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/** Tiny weekly bar chart for the user's state. */
-function TrendBars({ data }: { data: { week: string; value: number }[] }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'flex-end', gap: '.35rem', height: 140 }}>
-      {data.map(d => {
-        const h = Math.max(2, (d.value / 100) * 130);
-        const color = d.value >= 80 ? '#3d6b2a' : d.value >= 50 ? '#a16207' : '#b91c1c';
-        return (
-          <div
-            key={d.week}
-            title={`${fmtWeek(d.week)}: ${d.value}%`}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 28 }}
-          >
-            <span style={{ fontSize: '.65rem', color: '#444', marginBottom: 2 }}>{d.value}%</span>
-            <div style={{ width: 22, height: h, background: color, borderRadius: '3px 3px 0 0' }} />
-            <span style={{ fontSize: '.65rem', color: '#888', marginTop: 4 }}>{fmtWeek(d.week)}</span>
-          </div>
-        );
-      })}
     </div>
   );
 }

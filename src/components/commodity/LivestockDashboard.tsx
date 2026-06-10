@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { api, AnimalData, CommodityGroup, User } from '@/src/lib/api';
+import { api, AnimalData, CommodityGroup } from '@/src/lib/api';
+import { useUser } from '@/src/lib/UserContext';
 import styles from './commodityDashboard.module.css';
 
 interface Props {
@@ -77,7 +78,7 @@ export default function LivestockDashboard({
   commodity, commodityLabel, commodityIcon, pricesGroupName,
   defaultMonth, inventoryDescription,
 }: Props) {
-  const [user, setUser]               = useState<User | null>(null);
+  const { user } = useUser();
   const [prices, setPrices]           = useState<CommodityGroup | null>(null);
   const [currentRows, setCurrentRows] = useState<AnimalData[]>([]);
   const [priorRows, setPriorRows]     = useState<AnimalData[]>([]);
@@ -89,11 +90,6 @@ export default function LivestockDashboard({
     let cancelled = false;
     setLoading(true);
     setError('');
-
-    try {
-      const stored = typeof window !== 'undefined' ? localStorage.getItem('agri_user') : null;
-      if (stored) setUser(JSON.parse(stored) as User);
-    } catch { /* ignore */ }
 
     // NASS Hogs+Cattle annual reports for "current year" usually come out the next year.
     // Fall back through recent years if the report hasn't dropped yet.

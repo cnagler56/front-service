@@ -2,21 +2,24 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/src/lib/UserContext';
 
 /**
- * /logout — clears the stored user + token, fires the same-tab event so the
- * NavigationBar flips Sign In ↔ Logout immediately, and redirects to /signin.
- * Lives next to SignInPage since both handle the auth session lifecycle.
+ * /logout — calls the server to invalidate the session cookie, then clears
+ * the in-memory user via the UserContext. Redirects to /signin.
+ *
+ * Lives in the auth folder since it's part of the auth lifecycle.
  */
 export default function LogoutPage() {
   const router = useRouter();
+  const { signOut } = useAuth();
 
   useEffect(() => {
-    localStorage.removeItem('agri_user');
-    localStorage.removeItem('token');
-    window.dispatchEvent(new Event('agri-auth-changed'));
-    router.push('/signin');
-  }, [router]);
+    (async () => {
+      await signOut();
+      router.push('/signin');
+    })();
+  }, [router, signOut]);
 
   return (
     <p style={{ padding: '2rem', textAlign: 'center', fontFamily: 'Lato, sans-serif', color: '#666' }}>

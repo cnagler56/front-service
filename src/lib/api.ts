@@ -257,13 +257,30 @@ export interface GddResponse {
   rows: GddRow[];
 }
 
+/**
+ * Default fetch options for every API call — `credentials: 'include'` is
+ * what makes the browser send the session cookie cross-origin (Next.js on
+ * :3000 → AgriServer on :8081). Without this, the server sees no cookie
+ * and /me always 401s.
+ */
+const FETCH_OPTS: RequestInit = { credentials: 'include' };
+
 async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE}${path}`);
+  const res = await fetch(`${BASE}${path}`, FETCH_OPTS);
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   return res.json() as Promise<T>;
 }
 
 export const api = {
+  /** Returns the user attached to the current session cookie, or throws 401. */
+  getMe: () => get<User>('/me'),
+
+  /** Clears the server-side session and tells the browser to drop the cookie. */
+  logout: async (): Promise<void> => {
+    const res = await fetch(`${BASE}/logout`, { method: 'POST', credentials: 'include' });
+    if (!res.ok && res.status !== 204) throw new Error(`${res.status} ${res.statusText}`);
+  },
+
   login: (email: string, password: string) =>
     get<User>(`/login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`),
 
@@ -277,7 +294,7 @@ export const api = {
     interest?: string;
   }): Promise<User> => {
     const res = await fetch(`${BASE}/register`, {
-      method: 'POST',
+      method: 'POST', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
@@ -296,7 +313,7 @@ export const api = {
   getPosts: () => get<Post[]>('/posts'),
   addPost: (body: Omit<Post, 'idposts' | 'date'>) =>
     fetch(`${BASE}/addpost`, {
-      method: 'POST',
+      method: 'POST', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     }),
@@ -310,7 +327,7 @@ export const api = {
   },
   addListing: (body: Omit<Listing, 'id' | 'date'>) =>
     fetch(`${BASE}/addlisting`, {
-      method: 'POST',
+      method: 'POST', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     }).then(async r => {
@@ -328,7 +345,7 @@ export const api = {
     get<YieldGuess[]>(`/api/yield-guess/${commodity}`),
   submitYieldGuess: async (body: YieldGuess): Promise<YieldGuess> => {
     const res = await fetch(`${BASE}/api/yield-guess`, {
-      method: 'POST',
+      method: 'POST', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
@@ -372,7 +389,7 @@ export const api = {
 
   createField: async (body: FieldRecord): Promise<FieldRecord> => {
     const res = await fetch(`${BASE}/api/fields`, {
-      method: 'POST',
+      method: 'POST', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
@@ -382,7 +399,7 @@ export const api = {
 
   updateField: async (id: number, body: FieldRecord): Promise<FieldRecord> => {
     const res = await fetch(`${BASE}/api/fields/${id}`, {
-      method: 'PUT',
+      method: 'PUT', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
@@ -391,7 +408,7 @@ export const api = {
   },
 
   deleteField: async (id: number): Promise<void> => {
-    const res = await fetch(`${BASE}/api/fields/${id}`, { method: 'DELETE' });
+    const res = await fetch(`${BASE}/api/fields/${id}`, { method: 'DELETE', credentials: 'include' });
     if (!res.ok && res.status !== 204) throw new Error(`${res.status} ${res.statusText}`);
   },
 
@@ -401,7 +418,7 @@ export const api = {
 
   createForecastLocation: async (body: ForecastLocation): Promise<ForecastLocation> => {
     const res = await fetch(`${BASE}/api/forecast-locations`, {
-      method: 'POST',
+      method: 'POST', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
@@ -411,7 +428,7 @@ export const api = {
 
   updateForecastLocation: async (id: number, body: ForecastLocation): Promise<ForecastLocation> => {
     const res = await fetch(`${BASE}/api/forecast-locations/${id}`, {
-      method: 'PUT',
+      method: 'PUT', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
@@ -420,12 +437,12 @@ export const api = {
   },
 
   deleteForecastLocation: async (id: number): Promise<void> => {
-    const res = await fetch(`${BASE}/api/forecast-locations/${id}`, { method: 'DELETE' });
+    const res = await fetch(`${BASE}/api/forecast-locations/${id}`, { method: 'DELETE', credentials: 'include' });
     if (!res.ok && res.status !== 204) throw new Error(`${res.status} ${res.statusText}`);
   },
 
   refreshForecastLocation: async (id: number): Promise<ForecastLocation> => {
-    const res = await fetch(`${BASE}/api/forecast-locations/${id}/refresh`, { method: 'POST' });
+    const res = await fetch(`${BASE}/api/forecast-locations/${id}/refresh`, { method: 'POST', credentials: 'include' });
     if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
     return res.json();
   },

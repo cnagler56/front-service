@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { api, NASSYieldData, User } from '@/src/lib/api';
+import { useMemo, useState } from 'react';
+import { api, NASSYieldData } from '@/src/lib/api';
+import { useUser } from '@/src/lib/UserContext';
 import YieldHistoryChart, { Series, colorFor } from '@/src/components/YieldHistoryChart';
 import styles from '@/src/styles/farm.module.css';
 import { classify, unit, toNum } from './nassClassify';
@@ -23,15 +24,7 @@ export default function HistoryPanel({ grain }: Props) {
   const [error, setError]               = useState('');
   const [historyClass, setHistoryClass] = useState<string>('');
   const [selectedStates, setSelectedStates] = useState<Set<string>>(new Set());
-  const [user, setUser] = useState<User | null>(null);
-
-  // Default chart to the user's state when we know it
-  useEffect(() => {
-    try {
-      const stored = typeof window !== 'undefined' ? localStorage.getItem('agri_user') : null;
-      if (stored) setUser(JSON.parse(stored) as User);
-    } catch { /* ignore */ }
-  }, []);
+  const { user } = useUser();
 
   async function fetchHistory() {
     setLoading(true);

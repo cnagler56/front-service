@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import styles from '@/src/styles/farm.module.css';
 import AuthTabs, { AuthMode } from './AuthTabs';
 import SignInForm from './SignInForm';
@@ -9,10 +10,15 @@ import SignUpForm from './SignUpForm';
 /**
  * /signin orchestrator — owns the tab mode and the shared error message,
  * delegates the form mechanics to SignInForm / SignUpForm.
+ *
+ * Reads ?reason=inactivity from the URL so the inactivity logout flow
+ * can explain to the user why they're staring at a login form again.
  */
 export default function SignInPage() {
   const [mode, setMode]   = useState<AuthMode>('signin');
   const [error, setError] = useState('');
+  const searchParams = useSearchParams();
+  const reason = searchParams?.get('reason');
 
   function switchMode(next: AuthMode) {
     setMode(next);
@@ -30,6 +36,20 @@ export default function SignInPage() {
         <AuthTabs mode={mode} onChange={switchMode} />
 
         <div className={styles.sectionBody}>
+          {reason === 'inactivity' && !error && (
+            <p style={{
+              background: '#fef7e6',
+              border: '1px solid #f4d77a',
+              color: '#8a6500',
+              borderRadius: 4,
+              padding: '.6rem .9rem',
+              fontSize: '.85rem',
+              marginBottom: '.85rem',
+              fontFamily: 'Lato, sans-serif',
+            }}>
+              You were signed out after 4 hours of inactivity. Sign in again to pick up where you left off.
+            </p>
+          )}
           {error && <p className={styles.error}>{error}</p>}
           {mode === 'signin'
             ? <SignInForm onSwitchToSignUp={() => switchMode('signup')} onError={setError} />

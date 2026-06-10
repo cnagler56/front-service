@@ -75,7 +75,6 @@ export default function CropProgressPage() {
         <CropProgressTable
           key={`${grain}-${year}`}
           rows={rows}
-          year={year}
           user={user}
         />
       )}

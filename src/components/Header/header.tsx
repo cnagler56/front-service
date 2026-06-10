@@ -1,23 +1,15 @@
 'use client';
 
-import React, { useEffect, useState } from "react";
+import React from "react";
+import { useUser } from "@/src/lib/UserContext";
 
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '');
 
 const Header = () => {
-  const [welcomeMessage, setWelcomeMessage] = useState('');
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('agri_user');
-      if (stored) {
-        const user = JSON.parse(stored);
-        const first = cap(user.firstName ?? '');
-        const last = cap(user.lastName ?? '');
-        if (first) setWelcomeMessage(`Welcome, ${first} ${last}`.trim());
-      }
-    } catch {}
-  }, []);
+  const { user } = useUser();
+  const first = cap(user?.firstName ?? '');
+  const last  = cap(user?.lastName  ?? '');
+  const welcomeMessage = first ? `Welcome, ${first} ${last}`.trim() : '';
 
   return (
     <>
