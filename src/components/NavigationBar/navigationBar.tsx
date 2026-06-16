@@ -1,25 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useUser } from "@/src/lib/UserContext";
 
 export const NavigationBar = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const pathname = usePathname();
-
-  useEffect(() => {
-    const check = () => setIsLoggedIn(!!localStorage.getItem("token"));
-    check();
-    // Same-tab updates: signin / signup / logout pages dispatch this
-    window.addEventListener("agri-auth-changed", check);
-    // Other-tab updates: e.g. user logs out in a different tab
-    window.addEventListener("storage", check);
-    return () => {
-      window.removeEventListener("agri-auth-changed", check);
-      window.removeEventListener("storage", check);
-    };
-  }, [pathname]);
+  // The UserContext owns auth state. When sign-in / sign-up / sign-out fire,
+  // the provider re-renders and this flips Sign In ↔ Logout automatically —
+  // no custom event listening required.
+  const { user } = useUser();
+  const isLoggedIn = !!user;
 
   return (
     <>

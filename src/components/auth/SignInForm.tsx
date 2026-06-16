@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { api } from '@/src/lib/api';
+import { useAuth } from '@/src/lib/UserContext';
 import styles from '@/src/styles/farm.module.css';
-import { completeAuth } from './completeAuth';
 
 interface Props {
   onSwitchToSignUp: () => void;
@@ -14,6 +14,7 @@ interface Props {
 /** Email + password sign-in form. */
 export default function SignInForm({ onSwitchToSignUp, onError }: Props) {
   const router = useRouter();
+  const { signIn } = useAuth();
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading]   = useState(false);
@@ -23,8 +24,8 @@ export default function SignInForm({ onSwitchToSignUp, onError }: Props) {
     onError('');
     setLoading(true);
     try {
-      const user = await api.login(email, password);
-      completeAuth(user, router);
+      await signIn(email, password);
+      router.push('/');
     } catch {
       onError('Invalid email or password.');
     } finally {
@@ -53,6 +54,9 @@ export default function SignInForm({ onSwitchToSignUp, onError }: Props) {
       <button className={styles.btn} type="submit" disabled={loading}>
         {loading ? 'Signing in…' : 'Sign In'}
       </button>
+      <p className={styles.authSwitch} style={{ marginBottom: '.25rem' }}>
+        <Link href="/forgot-password" className={styles.linkBtn}>Forgot password?</Link>
+      </p>
       <p className={styles.authSwitch}>
         New to Just4Ag?{' '}
         <button type="button" className={styles.linkBtn} onClick={onSwitchToSignUp}>

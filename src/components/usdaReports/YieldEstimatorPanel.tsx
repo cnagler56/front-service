@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { api, UsdaYieldReport, YieldGuess } from '@/src/lib/api';
+import { api, UsdaPlantingReport, UsdaYieldReport, YieldGuess } from '@/src/lib/api';
+import { useUser } from '@/src/lib/UserContext';
 import styles from '@/src/styles/farm.module.css';
 
 interface Props {
@@ -22,6 +23,7 @@ function refPeriodLabel(p: string | undefined, year: number): string {
 
 export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 'bu/acre' }: Props) {
   const [data, setData] = useState<UsdaYieldReport | null>(null);
+  const [planting, setPlanting] = useState<UsdaPlantingReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
   const [userYields, setUserYields] = useState<Record<string, number>>({});
@@ -33,6 +35,15 @@ export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 
   const [interest, setInterest] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitMsg, setSubmitMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const { user } = useUser();
+
+  // Pre-fill name / state / interest from the signed-in user when known
+  useEffect(() => {
+    if (!user) return;
+    if (user.firstName) setName(`${user.firstName} ${user.lastName ?? ''}`.trim());
+    if (user.state)     setUserState(user.state);
+    if (user.interest)  setInterest(user.interest);
+  }, [user]);
 
   // Initial load — USDA data + community guesses for this commodity
   useEffect(() => {
@@ -41,21 +52,19 @@ export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 
     setError('');
     setSubmitMsg(null);
 
-    // Pre-fill name / state / interest from the signed-in user if available
-    try {
-      const stored = typeof window !== 'undefined' ? localStorage.getItem('agri_user') : null;
-      if (stored) {
-        const u = JSON.parse(stored);
-        if (u.firstName) setName(`${u.firstName} ${u.lastName ?? ''}`.trim());
-        if (u.state)     setUserState(u.state);
-        if (u.interest)  setInterest(u.interest);
-      }
-    } catch { /* ignore */ }
-
-    Promise.all([api.getUsdaYield(commodity), api.getYieldGuesses(commodity)])
-      .then(([d, g]) => {
+    Promise.all([
+      api.getUsdaYield(commodity),
+      api.getYieldGuesses(commodity),
+      // Pull planted acres too — after the June 30 Acreage report this gives the
+      // current-year planted acres for the weighting + the table column. If the
+      // report hasn't been released yet this gracefully returns last year's data
+      // and we fall back to prior-year harvested.
+      api.getUsdaPlanting(commodity).catch(() => null),
+    ])
+      .then(([d, g, p]) => {
         if (cancelled) return;
         setData(d);
+        setPlanting(p);
         const init: Record<string, number> = {};
         d.currentEstimates.forEach(row => { init[row.state.toLowerCase()] = row.yieldBu; });
         setUserYields(init);
@@ -66,24 +75,77 @@ export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 
     return () => { cancelled = true; };
   }, [commodity, commodityLabel]);
 
+  /**
+   * Choose the "best available" acreage source for the production-weighted
+   * national average and for the table's Acres column. Most accurate first:
+   *
+   *   1. Current-year HARVESTED acres — published monthly by NASS during the
+   *      season and attached to each state's yield snapshot. This is the exact
+   *      denominator USDA uses, so the national yield matches USDA's own.
+   *   2. Current-year PLANTED acres — from the Prospective Plantings (Mar 31)
+   *      and Acreage (Jun 30) reports, before harvested forecasts begin.
+   *   3. Prior-year HARVESTED acres — the stable off-season / early-season
+   *      fallback, and a per-state fallback for states missing newer data.
+   */
+  const acresSource = useMemo<{
+    byState: Map<string, number>;
+    label: string;            // human label for the table column header
+    sourceYear: number | null;
+    isLive: boolean;          // true when using current-year data (harvested or planted)
+  }>(() => {
+    // Prior-year harvested — always built as the base fallback layer
+    const priorHarvested = new Map<string, number>();
+    data?.priorYearFinal.forEach(r => { if (r.acres != null) priorHarvested.set(r.state, r.acres); });
+
+    // 1. Current-year harvested acres ride along on the current yield snapshots
+    const currentHarvested = new Map<string, number>();
+    data?.currentEstimates.forEach(r => { if (r.acres != null) currentHarvested.set(r.state, r.acres); });
+    if (!data?.fellBack && currentHarvested.size > 0) {
+      priorHarvested.forEach((v, k) => { if (!currentHarvested.has(k)) currentHarvested.set(k, v); });
+      return {
+        byState: currentHarvested,
+        label: `Harvested Acres ${data.currentYear}`,
+        sourceYear: data.currentYear,
+        isLive: true,
+      };
+    }
+
+    // 2. Current-year planted acres (before harvested forecasts begin)
+    if (planting && !planting.fellBack && planting.currentPlantings.length > 0) {
+      const planted = new Map<string, number>();
+      planting.currentPlantings.forEach(p => { planted.set(p.state, p.acres); });
+      priorHarvested.forEach((v, k) => { if (!planted.has(k)) planted.set(k, v); });
+      return {
+        byState: planted,
+        label: `Planted Acres ${planting.currentYear}`,
+        sourceYear: planting.currentYear,
+        isLive: true,
+      };
+    }
+
+    // 3. Prior-year harvested fallback
+    return {
+      byState: priorHarvested,
+      label: `Harvested Acres ${data?.priorYear ?? ''}`.trim(),
+      sourceYear: data?.priorYear ?? null,
+      isLive: false,
+    };
+  }, [data, planting]);
+
   const stateRows = useMemo(() => {
     if (!data) return [];
     const priorByState = new Map<string, number>();
-    const acresByState = new Map<string, number>();
-    data.priorYearFinal.forEach(r => {
-      priorByState.set(r.state, r.yieldBu);
-      if (r.acres != null) acresByState.set(r.state, r.acres);
-    });
+    data.priorYearFinal.forEach(r => { priorByState.set(r.state, r.yieldBu); });
     return data.currentEstimates
       .map(c => ({
         state:   c.state,
         current: c.yieldBu,
         prior:   priorByState.get(c.state) ?? null,
-        acres:   acresByState.get(c.state) ?? 0,
+        acres:   acresSource.byState.get(c.state) ?? 0,
         refPeriod: c.referencePeriod,
       }))
       .sort((a, b) => b.acres - a.acres);
-  }, [data]);
+  }, [data, acresSource]);
 
   const nationalEstimate = useMemo<string | null>(() => {
     if (stateRows.length === 0) return null;
@@ -113,8 +175,6 @@ export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 
     setSubmitting(true);
     setSubmitMsg(null);
     try {
-      const stored = typeof window !== 'undefined' ? localStorage.getItem('agri_user') : null;
-      const user = stored ? JSON.parse(stored) : null;
       await api.submitYieldGuess({
         commodity,
         estimate: parseFloat(nationalEstimate),
@@ -170,7 +230,16 @@ export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 
                 </th>
                 <th>vs USDA</th>
                 {!data.fellBack && <th>USDA Final {data.priorYear}</th>}
-                <th>Acres (000s)</th>
+                <th title={acresSource.isLive
+                    ? 'Current-year acres from USDA NASS — the denominator used to weight the national yield'
+                    : 'Prior-year harvested acres — used until current-year USDA estimates are published'}>
+                  {acresSource.label} (000s)
+                  {acresSource.isLive && (
+                    <span style={{ color: '#3d6b2a', fontSize: '.65rem', marginLeft: '.35rem' }}>
+                      • LIVE
+                    </span>
+                  )}
+                </th>
               </tr>
             </thead>
             <tbody>

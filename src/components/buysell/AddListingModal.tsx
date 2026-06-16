@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 import {
-  api, User,
+  api,
   ListingType, ListingCategory, ContactMethod,
   LISTING_CATEGORIES, CONTACT_METHODS,
 } from '@/src/lib/api';
+import { useUser } from '@/src/lib/UserContext';
 import styles from '@/src/styles/farm.module.css';
 import { fileToResizedDataUrl } from './imageResize';
 import { titleHint, priceHint, qtyHint, detailsHint } from './listingHints';
@@ -29,16 +30,8 @@ export default function AddListingModal({ onClose, onCreated }: Props) {
   const [contactValue,  setContactValue]  = useState('');
   const [submitting, setSubmitting]     = useState(false);
   const [msg, setMsg]                   = useState('');
-  const [user, setUser]                 = useState<User | null>(null);
+  const { user } = useUser();
   const fileRef = useRef<HTMLInputElement>(null);
-
-  // Pull the logged-in user from localStorage when the modal opens
-  useEffect(() => {
-    try {
-      const stored = typeof window !== 'undefined' ? localStorage.getItem('agri_user') : null;
-      if (stored) setUser(JSON.parse(stored) as User);
-    } catch { /* ignore */ }
-  }, []);
 
   // Close on Escape, prevent background scroll
   useEffect(() => {

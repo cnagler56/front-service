@@ -2,9 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { api } from '@/src/lib/api';
+import { useAuth } from '@/src/lib/UserContext';
 import styles from '@/src/styles/farm.module.css';
-import { completeAuth } from './completeAuth';
 
 interface Props {
   onSwitchToSignIn: () => void;
@@ -14,6 +13,7 @@ interface Props {
 /** New-account registration form. Client-side validates password + confirmation. */
 export default function SignUpForm({ onSwitchToSignIn, onError }: Props) {
   const router = useRouter();
+  const { signUp } = useAuth();
   const [firstName, setFirstName] = useState('');
   const [lastName,  setLastName]  = useState('');
   const [email,     setEmail]     = useState('');
@@ -36,7 +36,7 @@ export default function SignUpForm({ onSwitchToSignIn, onError }: Props) {
     }
     setLoading(true);
     try {
-      const user = await api.register({
+      await signUp({
         firstName: firstName.trim(),
         lastName:  lastName.trim(),
         email:     email.trim(),
@@ -44,7 +44,7 @@ export default function SignUpForm({ onSwitchToSignIn, onError }: Props) {
         city:      city.trim(),
         state:     stateName.trim(),
       });
-      completeAuth(user, router);
+      router.push('/');
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
       onError(/409|exists/i.test(msg)
