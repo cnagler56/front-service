@@ -50,6 +50,20 @@ export default function SignInPage() {
               You were signed out after 4 hours of inactivity. Sign in again to pick up where you left off.
             </p>
           )}
+          {reason === 'reset' && !error && (
+            <p style={{
+              background: '#f0fdf4',
+              border: '1px solid #c3e6cb',
+              color: '#27ae60',
+              borderRadius: 4,
+              padding: '.6rem .9rem',
+              fontSize: '.85rem',
+              marginBottom: '.85rem',
+              fontFamily: 'Lato, sans-serif',
+            }}>
+              ✓ Your password has been reset. Sign in with your new password.
+            </p>
+          )}
           {error && <p className={styles.error}>{error}</p>}
           {mode === 'signin'
             ? <SignInForm onSwitchToSignUp={() => switchMode('signup')} onError={setError} />

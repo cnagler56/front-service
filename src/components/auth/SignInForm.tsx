@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/lib/UserContext';
 import styles from '@/src/styles/farm.module.css';
@@ -53,6 +54,9 @@ export default function SignInForm({ onSwitchToSignUp, onError }: Props) {
       <button className={styles.btn} type="submit" disabled={loading}>
         {loading ? 'Signing in…' : 'Sign In'}
       </button>
+      <p className={styles.authSwitch} style={{ marginBottom: '.25rem' }}>
+        <Link href="/forgot-password" className={styles.linkBtn}>Forgot password?</Link>
+      </p>
       <p className={styles.authSwitch}>
         New to Just4Ag?{' '}
         <button type="button" className={styles.linkBtn} onClick={onSwitchToSignUp}>

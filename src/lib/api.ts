@@ -310,6 +310,30 @@ export const api = {
     return res.json() as Promise<User>;
   },
 
+  /** Begin a password reset. Always resolves (server never reveals if the email exists). */
+  requestPasswordReset: async (email: string): Promise<string> => {
+    const res = await fetch(`${BASE}/forgot-password`, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.message ?? `${res.status} ${res.statusText}`);
+    return data?.message ?? 'If an account exists for that email, a reset link is on its way.';
+  },
+
+  /** Complete a password reset with the emailed token. Throws on invalid/expired token. */
+  resetPassword: async (token: string, password: string): Promise<string> => {
+    const res = await fetch(`${BASE}/reset-password`, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, password }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.message ?? 'This reset link is invalid or has expired.');
+    return data?.message ?? 'Your password has been reset.';
+  },
+
   getPosts: () => get<Post[]>('/posts'),
   addPost: (body: Omit<Post, 'idposts' | 'date'>) =>
     fetch(`${BASE}/addpost`, {
