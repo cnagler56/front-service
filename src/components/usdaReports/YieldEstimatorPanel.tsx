@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { api, UsdaPlantingReport, UsdaYieldReport, YieldGuess } from '@/src/lib/api';
 import { useUser } from '@/src/lib/UserContext';
 import styles from '@/src/styles/farm.module.css';
@@ -21,28 +22,44 @@ function refPeriodLabel(p: string | undefined, year: number): string {
   return `${map[p] ?? p} ${year}`;
 }
 
+/** localStorage key holding this commodity's per-state edits. */
+const overridesKey = (commodity: string) => `yieldChallenge:overrides:${commodity}`;
+
+/** Read saved per-state edits (SSR-safe). */
+function loadOverrides(commodity: string): Record<string, number> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = window.localStorage.getItem(overridesKey(commodity));
+    return raw ? (JSON.parse(raw) as Record<string, number>) : {};
+  } catch {
+    return {};
+  }
+}
+
 export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 'bu/acre' }: Props) {
   const [data, setData] = useState<UsdaYieldReport | null>(null);
   const [planting, setPlanting] = useState<UsdaPlantingReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
-  const [userYields, setUserYields] = useState<Record<string, number>>({});
+  // Per-state edits, keyed by lowercased state. Only states the user actually
+  // changed are stored (everything else falls back to the live USDA value), and
+  // they're hydrated from localStorage so edits survive leaving the page.
+  const [userYields, setUserYields] = useState<Record<string, number>>(() => loadOverrides(commodity));
 
   // Community guess state
   const [guesses, setGuesses] = useState<YieldGuess[]>([]);
   const [name, setName]         = useState('');
   const [userState, setUserState] = useState('');
-  const [interest, setInterest] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitMsg, setSubmitMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const { user } = useUser();
 
-  // Pre-fill name / state / interest from the signed-in user when known
+  // Pre-fill name / state from the signed-in user. Role (interest) is sent
+  // automatically from the profile at submit time — no form field for it.
   useEffect(() => {
     if (!user) return;
     if (user.firstName) setName(`${user.firstName} ${user.lastName ?? ''}`.trim());
     if (user.state)     setUserState(user.state);
-    if (user.interest)  setInterest(user.interest);
   }, [user]);
 
   // Initial load — USDA data + community guesses for this commodity
@@ -65,15 +82,27 @@ export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 
         if (cancelled) return;
         setData(d);
         setPlanting(p);
-        const init: Record<string, number> = {};
-        d.currentEstimates.forEach(row => { init[row.state.toLowerCase()] = row.yieldBu; });
-        setUserYields(init);
+        // NB: we intentionally don't seed userYields here — unedited states fall
+        // back to the live USDA value, and the user's saved edits (hydrated from
+        // localStorage) stay intact across reloads.
         setGuesses(g);
       })
       .catch(() => { if (!cancelled) setError(`Could not load ${commodityLabel} yield data.`); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [commodity, commodityLabel]);
+
+  // Persist edits whenever they change so they survive navigating away.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const key = overridesKey(commodity);
+      if (Object.keys(userYields).length === 0) window.localStorage.removeItem(key);
+      else window.localStorage.setItem(key, JSON.stringify(userYields));
+    } catch {
+      /* ignore storage errors (quota / private mode) */
+    }
+  }, [userYields, commodity]);
 
   /**
    * Choose the "best available" acreage source for the production-weighted
@@ -164,14 +193,35 @@ export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 
     return (sum / guesses.length).toFixed(1);
   }, [guesses]);
 
+  // Baseline (live USDA) value per state, for pruning no-op edits.
+  const baseline = useMemo(() => {
+    const m = new Map<string, number>();
+    data?.currentEstimates.forEach(r => m.set(r.state.toLowerCase(), r.yieldBu));
+    return m;
+  }, [data]);
+
+  const editedCount = Object.keys(userYields).length;
+
   function updateYield(stateKey: string, value: string) {
     const n = parseFloat(value);
-    if (!isNaN(n)) setUserYields(prev => ({ ...prev, [stateKey]: n }));
+    if (isNaN(n)) return;
+    setUserYields(prev => {
+      const next = { ...prev };
+      const base = baseline.get(stateKey);
+      // If the user lands back on the USDA value, drop the override entirely so
+      // unedited states keep tracking live USDA data.
+      if (base != null && Math.abs(n - base) < 0.05) delete next[stateKey];
+      else next[stateKey] = n;
+      return next;
+    });
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!nationalEstimate) return;
+  function resetEdits() {
+    setUserYields({});
+  }
+
+  async function submitGuess(shared: boolean) {
+    if (!user || !nationalEstimate || !name.trim()) return;
     setSubmitting(true);
     setSubmitMsg(null);
     try {
@@ -180,10 +230,17 @@ export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 
         estimate: parseFloat(nationalEstimate),
         name: name.trim(),
         state: userState.trim(),
-        interest: interest.trim(),
-        userId: user?.userId ?? 0,
+        interest: user.interest ?? '',   // sent automatically from the profile
+        userId: user.userId,
+        shared,
       });
-      setSubmitMsg({ ok: true, text: `Your ${commodityLabel.toLowerCase()} estimate of ${nationalEstimate} ${unit} was submitted!` });
+      setSubmitMsg({
+        ok: true,
+        text: shared
+          ? `Your ${commodityLabel.toLowerCase()} estimate of ${nationalEstimate} ${unit} was submitted!`
+          : `Submitted privately — your ${nationalEstimate} ${unit} estimate counts toward the results but won't appear in Community Guesses.`,
+      });
+      // Only the public roster needs refreshing; a private guess won't show here.
       const updated = await api.getYieldGuesses(commodity);
       setGuesses(updated);
     } catch {
@@ -191,6 +248,11 @@ export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    submitGuess(true);
   }
 
   if (loading) return <p className={styles.loading}>Loading {commodityLabel} yield data…</p>;
@@ -210,9 +272,27 @@ export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 
         <div className={styles.sectionHead}>
           <span>📊</span>
           <h2>{commodityLabel} — Yield by State</h2>
-          <span style={{ marginLeft: 'auto', color: '#a8cc78', fontSize: '.75rem', fontFamily: 'Lato, sans-serif' }}>
-            Edit any row to adjust your estimate
-          </span>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '.6rem' }}>
+            {editedCount > 0 && (
+              <button
+                type="button"
+                onClick={resetEdits}
+                title="Discard your edits and snap every state back to the USDA value"
+                style={{
+                  background: 'transparent', border: '1px solid #a8cc78', color: '#d8ecc0',
+                  borderRadius: 4, padding: '.2rem .55rem', fontSize: '.72rem', cursor: 'pointer',
+                  fontFamily: 'Lato, sans-serif', whiteSpace: 'nowrap',
+                }}
+              >
+                ↺ Reset to USDA
+              </button>
+            )}
+            <span style={{ color: '#a8cc78', fontSize: '.75rem', fontFamily: 'Lato, sans-serif', whiteSpace: 'nowrap' }}>
+              {editedCount > 0
+                ? `${editedCount} edited · saved ✓`
+                : 'Edit any row to adjust your estimate'}
+            </span>
+          </div>
         </div>
         <div style={{ overflowY: 'auto', maxHeight: '62vh' }}>
           <table className={styles.cornTable}>
@@ -311,6 +391,12 @@ export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 
                 {submitMsg.text}
               </div>
             )}
+            {!user ? (
+              <p className={styles.empty} style={{ margin: 0 }}>
+                <Link href="/signin" style={{ color: '#3d6b2a', fontWeight: 700 }}>Sign in</Link>{' '}
+                to lock in your guess. Your name, state, and role come from your account.
+              </p>
+            ) : (
             <form className={styles.form} onSubmit={handleSubmit}>
               <div className={styles.formRow}>
                 <label>Your Name</label>
@@ -319,10 +405,6 @@ export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 
               <div className={styles.formRow}>
                 <label>Your State</label>
                 <input value={userState} onChange={e => setUserState(e.target.value)} placeholder="Iowa" required />
-              </div>
-              <div className={styles.formRow}>
-                <label>Your Role</label>
-                <input value={interest} onChange={e => setInterest(e.target.value)} placeholder="Farmer, Analyst, Trader…" />
               </div>
               <div style={{
                 background: '#f0fdf4',
@@ -345,7 +427,22 @@ export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 
               >
                 {submitting ? 'Submitting…' : `✏️ Submit My ${commodityLabel} Estimate`}
               </button>
+              <button
+                type="button"
+                onClick={() => submitGuess(false)}
+                disabled={submitting || !nationalEstimate || !name}
+                title="Your guess still counts toward the results, but your name won't show in Community Guesses."
+                style={{
+                  width: '100%', textAlign: 'center', marginTop: '.5rem',
+                  background: 'transparent', border: '1px solid #b0b0b0', color: '#666',
+                  borderRadius: 4, padding: '.55rem .9rem', fontSize: '.82rem',
+                  fontFamily: 'Lato, sans-serif', cursor: submitting ? 'default' : 'pointer',
+                }}
+              >
+                🙈 Cowardly submit without sharing
+              </button>
             </form>
+            )}
           </div>
         </div>
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/lib/UserContext';
 import styles from '@/src/styles/farm.module.css';
@@ -19,6 +20,7 @@ export default function SignUpForm({ onSwitchToSignIn, onError }: Props) {
   const [email,     setEmail]     = useState('');
   const [city,      setCity]      = useState('');
   const [stateName, setStateName] = useState('');
+  const [role,      setRole]      = useState('Farmer');
   const [password,  setPassword]  = useState('');
   const [confirm,   setConfirm]   = useState('');
   const [loading,   setLoading]   = useState(false);
@@ -43,6 +45,7 @@ export default function SignUpForm({ onSwitchToSignIn, onError }: Props) {
         password,
         city:      city.trim(),
         state:     stateName.trim(),
+        interest:  role,
       });
       router.push('/');
     } catch (err) {
@@ -91,6 +94,17 @@ export default function SignUpForm({ onSwitchToSignIn, onError }: Props) {
       </div>
 
       <div className={styles.formRow}>
+        <label>I am a…</label>
+        <select value={role} onChange={e => setRole(e.target.value)} required>
+          <option value="Farmer">Farmer</option>
+          <option value="Advisor">Advisor</option>
+          <option value="Student">Student</option>
+          <option value="Investor">Investor</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      <div className={styles.formRow}>
         <label>Password</label>
         <input
           type="password" value={password}
@@ -110,6 +124,12 @@ export default function SignUpForm({ onSwitchToSignIn, onError }: Props) {
       <button className={styles.btn} type="submit" disabled={loading}>
         {loading ? 'Creating account…' : 'Create Account'}
       </button>
+      <p style={{ fontSize: '.72rem', color: '#888', textAlign: 'center', margin: '.6rem 0 0', lineHeight: 1.5 }}>
+        By creating an account, you agree to our{' '}
+        <Link href="/terms" target="_blank" style={{ color: '#3d6b2a', fontWeight: 700 }}>Terms of Service</Link>
+        {' '}and{' '}
+        <Link href="/privacy" target="_blank" style={{ color: '#3d6b2a', fontWeight: 700 }}>Privacy Policy</Link>.
+      </p>
       <p className={styles.authSwitch}>
         Already have an account?{' '}
         <button type="button" className={styles.linkBtn} onClick={onSwitchToSignIn}>

@@ -11,7 +11,7 @@ import ActiveReportPanel from './ActiveReportPanel';
  * for the active report. Tab + panel rendering is delegated.
  */
 export default function UsdaReportsPage() {
-  const [activeKey, setActiveKey] = useState<ReportKey>('CORN_YIELD');
+  const [activeKey, setActiveKey] = useState<ReportKey>('CORN_PLANTING');
   const active = REPORTS.find(r => r.value === activeKey)!;
 
   return (
@@ -27,9 +27,12 @@ export default function UsdaReportsPage() {
           fontFamily: 'Lato, sans-serif', color: '#666', fontSize: '.875rem',
           margin: '0 0 .9rem', lineHeight: 1.6,
         }}>
-          Interactive USDA / NASS reports. Pick a report, adjust state-level numbers, and watch
-          the national rollup respond. Data is cached for ~7 days so we automatically pick up the
-          next monthly Crop Production or quarterly Acreage report.
+          USDA / NASS planted-acreage and livestock-inventory reports. Data is cached for ~7 days so
+          we automatically pick up the next Acreage, Prospective Plantings, or Cattle/Hogs report.{' '}
+          Looking to estimate yields?{' '}
+          <a href="/usda-challenge" style={{ color: '#3d6b2a', fontWeight: 700 }}>
+            Take the USDA Yield Challenge →
+          </a>
         </p>
 
         <ReportTabSelector activeKey={activeKey} onChange={setActiveKey} />

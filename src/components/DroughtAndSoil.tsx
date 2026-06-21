@@ -33,6 +33,11 @@ function moistureColor(v: number | null): string {
   return '#1d4ed8';
 }
 
+/**
+ * Soil moisture for the visitor's location (NASA POWER). The US Drought
+ * Monitor that used to live here now renders as a live, interactive layer on
+ * the Forecast Map, so this panel is soil-only.
+ */
 export default function DroughtAndSoil({ lat, lon, locationLabel }: Props) {
   const [rows, setRows] = useState<SoilMoistureRow[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -50,90 +55,82 @@ export default function DroughtAndSoil({ lat, lon, locationLabel }: Props) {
     return () => { cancelled = true; };
   }, [lat, lon]);
 
-  // Latest reading (POWER lags ~2 days behind real time)
-  const latest = rows && rows.length ? rows[rows.length - 1] : null;
+  // POWER's most recent ~2–3 days come back empty (it lags real time), so the
+  // "latest" gauge must use the most recent day that actually has data — not the
+  // literal last row, which is almost always blank.
+  const latest = rows
+    ? [...rows].reverse().find(r => r.GWETROOT != null || r.GWETTOP != null || r.GWETPROF != null) ?? null
+    : null;
+
+  // Trend chart: only days with real readings (drops the trailing blank days).
+  const trendRows = (rows ?? []).filter(r => r.GWETROOT != null);
 
   return (
     <div className={styles.section} style={{ overflow: 'visible' }}>
       <div className={styles.sectionHead}>
         <span>🛰️</span>
-        <h2>Drought & Soil Moisture</h2>
+        <h2>Soil Moisture</h2>
       </div>
       <div className={styles.sectionBody}>
-        <div className={styles.droughtSoilGrid}>
+        <p style={{ margin: '0 0 .75rem', fontSize: '.78rem', color: '#888' }}>
+          {locationLabel ? `For ${locationLabel}` : 'For your location'}.
+          Source: NASA POWER. 0 = dry, 1 = saturated.
+        </p>
 
-          {/* ── US Drought Monitor ─────────────────────────── */}
-          <div>
-            <h3 className={styles.subhead}>U.S. Drought Monitor</h3>
-            <p style={{ margin: '0 0 .5rem', fontSize: '.78rem', color: '#888' }}>
-              Updated weekly by NDMC, USDA, and NOAA. Click for full map.
+        {lat == null && (
+          <p className={styles.empty} style={{ margin: 0 }}>
+            Allow location at the top of the page to see soil moisture for your area.
+          </p>
+        )}
+        {error && <p className={styles.error}>{error}</p>}
+        {loading && <p className={styles.loading}>Loading soil data…</p>}
+
+        {latest && (
+          <>
+            <p style={{ margin: '0 0 .4rem', fontSize: '.72rem', color: '#6a7a55' }}>
+              Latest reading: <strong>{fmtPower(latest.date)}</strong>
+              <span style={{ color: '#aaa' }}> (POWER lags a few days)</span>
             </p>
-            <a
-              href="https://droughtmonitor.unl.edu/CurrentMap/StateDroughtMonitor.aspx?USA"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="https://droughtmonitor.unl.edu/data/png/current/current_usdm.png"
-                alt="Current US Drought Monitor map"
-                className={styles.droughtImg}
-              />
-            </a>
-          </div>
+            <div className={styles.moistureLatest}>
+              <MoistureGauge label="Surface (0–10 cm)" value={latest.GWETTOP} />
+              <MoistureGauge label="Root zone (0–1 m)" value={latest.GWETROOT} />
+              <MoistureGauge label="Full profile"      value={latest.GWETPROF} />
+            </div>
+          </>
+        )}
 
-          {/* ── NASA POWER soil moisture ───────────────────── */}
-          <div>
-            <h3 className={styles.subhead}>Soil Moisture (last 14 days)</h3>
-            <p style={{ margin: '0 0 .5rem', fontSize: '.78rem', color: '#888' }}>
-              {locationLabel ? `For ${locationLabel}` : 'For your location'}.
-              Source: NASA POWER. 0 = dry, 1 = saturated.
-            </p>
+        {!loading && rows && rows.length > 0 && trendRows.length === 0 && (
+          <p className={styles.empty} style={{ margin: '.5rem 0 0' }}>
+            No recent soil-moisture readings available for this location yet.
+          </p>
+        )}
 
-            {lat == null && (
-              <p className={styles.empty} style={{ margin: 0 }}>
-                Allow location at the top of the page to see soil moisture for your area.
-              </p>
-            )}
-            {error && <p className={styles.error}>{error}</p>}
-            {loading && <p className={styles.loading}>Loading soil data…</p>}
-
-            {latest && (
-              <div className={styles.moistureLatest}>
-                <MoistureGauge label="Surface (0–10 cm)" value={latest.GWETTOP} />
-                <MoistureGauge label="Root zone (0–1 m)" value={latest.GWETROOT} />
-                <MoistureGauge label="Full profile"      value={latest.GWETPROF} />
-              </div>
-            )}
-
-            {rows && rows.length > 0 && (
-              <>
-                <h4 style={{
-                  fontFamily: 'Lato, sans-serif',
-                  fontSize: '.7rem',
-                  color: '#6a7a55',
-                  textTransform: 'uppercase',
-                  letterSpacing: '.05em',
-                  margin: '1rem 0 .35rem',
-                }}>Root-zone trend</h4>
-                <div className={styles.moistureBars}>
-                  {rows.map(r => (
-                    <div key={r.date} title={`${fmtPower(r.date)}: root ${r.GWETROOT?.toFixed(2) ?? '—'}`}>
-                      <div
-                        className={styles.moistureBar}
-                        style={{
-                          height: r.GWETROOT == null ? 2 : Math.max(2, r.GWETROOT * 80),
-                          background: moistureColor(r.GWETROOT),
-                        }}
-                      />
-                      <span className={styles.moistureBarLabel}>{fmtPower(r.date).split(' ')[1]}</span>
-                    </div>
-                  ))}
+        {trendRows.length > 0 && (
+          <>
+            <h4 style={{
+              fontFamily: 'Lato, sans-serif',
+              fontSize: '.7rem',
+              color: '#6a7a55',
+              textTransform: 'uppercase',
+              letterSpacing: '.05em',
+              margin: '1rem 0 .35rem',
+            }}>Root-zone trend</h4>
+            <div className={styles.moistureBars}>
+              {trendRows.map(r => (
+                <div key={r.date} title={`${fmtPower(r.date)}: root ${r.GWETROOT?.toFixed(2) ?? '—'}`}>
+                  <div
+                    className={styles.moistureBar}
+                    style={{
+                      height: r.GWETROOT == null ? 2 : Math.max(2, r.GWETROOT * 80),
+                      background: moistureColor(r.GWETROOT),
+                    }}
+                  />
+                  <span className={styles.moistureBarLabel}>{fmtPower(r.date).split(' ')[1]}</span>
                 </div>
-              </>
-            )}
-          </div>
-        </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

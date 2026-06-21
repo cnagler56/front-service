@@ -6,8 +6,8 @@ import styles from './forecastChange.module.css';
 
 interface Props {
   location: ForecastLocation;
-  onEdit: () => void;
-  onDelete: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
 /** Safely parse the JSON snapshot. */
@@ -91,10 +91,12 @@ export default function ForecastDiffCard({ location, onEdit, onDelete }: Props) 
             )}
           </p>
         </div>
-        <div className={styles.locActions}>
-          <button type="button" onClick={onEdit}   className={styles.iconBtn} title="Edit">✏️</button>
-          <button type="button" onClick={onDelete} className={styles.iconBtn} title="Delete">🗑️</button>
-        </div>
+        {(onEdit || onDelete) && (
+          <div className={styles.locActions}>
+            {onEdit   && <button type="button" onClick={onEdit}   className={styles.iconBtn} title="Edit">✏️</button>}
+            {onDelete && <button type="button" onClick={onDelete} className={styles.iconBtn} title="Delete">🗑️</button>}
+          </div>
+        )}
       </div>
 
       {!current && (

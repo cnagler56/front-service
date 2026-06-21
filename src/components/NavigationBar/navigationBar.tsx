@@ -9,6 +9,7 @@ export const NavigationBar = () => {
   // no custom event listening required.
   const { user } = useUser();
   const isLoggedIn = !!user;
+  const isAdmin = user?.roles === 'ADMIN';
 
   return (
     <>
@@ -82,6 +83,26 @@ export const NavigationBar = () => {
           background: rgba(143, 188, 69, 0.2);
         }
 
+        /* Highlighted "challenge" call-to-action link */
+        .farm-nav li a.challenge-link {
+          color: #1a2e0f;
+          background: #8fbc45;
+          font-weight: 700;
+          border-radius: 4px;
+          margin: 0 .3rem;
+          box-shadow: 0 1px 6px rgba(143, 188, 69, 0.45);
+        }
+
+        .farm-nav li a.challenge-link:hover {
+          color: #1a2e0f;
+          background: #a8cc78;
+        }
+
+        /* Suppress the underline indicator on the pill-style challenge link */
+        .farm-nav li a.challenge-link:hover::after {
+          display: none;
+        }
+
         /* Active link indicator */
         .farm-nav li a:hover::after {
           content: '';
@@ -103,6 +124,12 @@ export const NavigationBar = () => {
         <ul>
           <li>
             <Link href="/home">Home</Link>
+          </li>
+          <li>
+            <Link href="/usda-challenge" className="challenge-link">🏆 Yield Challenge</Link>
+          </li>
+          <li>
+            <Link href="/usda-results">Results</Link>
           </li>
           <li>
             <Link href="/corn">Corn</Link>
@@ -135,10 +162,7 @@ export const NavigationBar = () => {
             <Link href="/calculators">Calculators</Link>
           </li>
           <li>
-            <Link href="/fields">My Fields</Link>
-          </li>
-          <li>
-            <Link href="/weather">Weather</Link>
+            <Link href="/weather">Local Weather</Link>
           </li>
           <li>
             <Link href="/forecast-change">Change in Forecast</Link>
@@ -147,11 +171,13 @@ export const NavigationBar = () => {
             <Link href="/forecast-map">Forecast Map</Link>
           </li>
           <li>
-            <Link href="/nws">NWS</Link>
-          </li>
-          <li>
             <Link href="/contact">Contact Us</Link>
           </li>
+          {isAdmin && (
+            <li>
+              <Link href="/feedback" className="auth-link">📬 Feedback</Link>
+            </li>
+          )}
           <li>
             {isLoggedIn ? (
               <Link href="/logout" className="auth-link">

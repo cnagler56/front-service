@@ -34,6 +34,14 @@ function fmtPrice(n: number | null | undefined): string {
   return n.toFixed(2);
 }
 
+/** Unix seconds → "as of Jun 18, 1:20 PM" (the quote's timestamp from Yahoo). */
+function fmtAsOf(sec: number | null | undefined): string {
+  if (!sec) return '';
+  const d = new Date(sec * 1000);
+  if (isNaN(d.getTime())) return '';
+  return `as of ${d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`;
+}
+
 function parseInventory(v: string | null | undefined): number | null {
   if (!v) return null;
   const n = parseFloat(String(v).replace(/,/g, ''));
@@ -179,6 +187,11 @@ export default function LivestockDashboard({
                   {fmtPrice(frontPrice.last)} <span className={styles.unitLabel}>{prices?.unit}</span>
                 </div>
                 <ChangePill change={frontPrice.change ?? null} pct={frontPrice.changePercent ?? null} />
+                {frontPrice.asOf && (
+                  <div style={{ fontFamily: 'Lato, sans-serif', fontSize: '.68rem', color: '#8aa06a', marginTop: '.3rem' }}>
+                    {fmtAsOf(frontPrice.asOf)} · ~10-min delayed
+                  </div>
+                )}
               </div>
               <div className={styles.deferredTable}>
                 {(prices?.contracts ?? []).slice(1).map(c => (

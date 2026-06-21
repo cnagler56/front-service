@@ -6,8 +6,9 @@ import styles from './forecastChange.module.css';
 
 interface Props {
   locations: ForecastLocation[];
-  onEdit:   (loc: ForecastLocation) => void;
-  onDelete: (loc: ForecastLocation) => void;
+  // Omitted for non-admins → the cards render without edit/delete controls.
+  onEdit?:   (loc: ForecastLocation) => void;
+  onDelete?: (loc: ForecastLocation) => void;
 }
 
 /** Two-column grid of forecast-diff cards used on /forecast-change. */
@@ -18,8 +19,8 @@ export default function LocationsGrid({ locations, onEdit, onDelete }: Props) {
         <ForecastDiffCard
           key={loc.id}
           location={loc}
-          onEdit={() => onEdit(loc)}
-          onDelete={() => onDelete(loc)}
+          onEdit={onEdit ? () => onEdit(loc) : undefined}
+          onDelete={onDelete ? () => onDelete(loc) : undefined}
         />
       ))}
     </div>

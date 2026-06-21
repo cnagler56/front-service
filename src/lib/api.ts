@@ -11,6 +11,7 @@ export interface User {
   state: string;
   interest: string;
   active: boolean;
+  roles?: 'USER' | 'ADMIN';
 }
 
 export interface Post {
@@ -127,30 +128,6 @@ export interface CropProgressData {
   shortDesc?: string;
 }
 
-export type FieldCrop = 'CORN' | 'SOYBEANS' | 'WHEAT' | 'HAY' | 'PASTURE' | 'OTHER';
-
-export const FIELD_CROPS: { value: FieldCrop; label: string; icon: string }[] = [
-  { value: 'CORN',     label: 'Corn',     icon: '🌽' },
-  { value: 'SOYBEANS', label: 'Soybeans', icon: '🫘' },
-  { value: 'WHEAT',    label: 'Wheat',    icon: '🌾' },
-  { value: 'HAY',      label: 'Hay',      icon: '🌿' },
-  { value: 'PASTURE',  label: 'Pasture',  icon: '🐄' },
-  { value: 'OTHER',    label: 'Other',    icon: '📦' },
-];
-
-export interface FieldRecord {
-  id?: number;
-  userId: number;
-  name: string;
-  acres?: number | null;
-  crop?: FieldCrop | null;
-  variety?: string | null;
-  plantedOn?: string | null;  // YYYY-MM-DD
-  lat?: number | null;
-  lon?: number | null;
-  notes?: string | null;
-  createdAt?: string;
-}
 
 export interface YieldSnapshot {
   id?: number;
@@ -177,12 +154,73 @@ export interface UsdaYieldReport {
 export interface YieldGuess {
   id?: number;
   commodity: string;
+  year?: number;
   estimate: number;
   name: string;
   state: string;
   interest: string;
   userId: number;
   date?: string;
+  shared?: boolean;   // false = "cowardly" submit, hidden from the public roster
+}
+
+export interface SupplyDemandRow {
+  attribute: string;
+  unit: string;                // WASDE units, e.g. "Million Bushels"
+  seq: number;                 // file/display order
+  values: (number | null)[];   // aligned to `years`
+}
+export interface SupplyDemandSheet {
+  commodity: string;
+  years: number[];             // newest first, e.g. [2026, 2025, 2024]
+  reportDate?: string;         // WASDE report date
+  updatedAt?: string;
+  us: SupplyDemandRow[];
+  world: SupplyDemandRow[];
+  message?: string;
+}
+
+export interface Feedback {
+  id?: number;
+  userId?: number | null;
+  name?: string;
+  email?: string;
+  message: string;
+  date?: string;
+}
+
+export interface ResultsRankRow {
+  label: string;        // group name or state
+  count: number;
+  avgEstimate: number;
+  avgError: number;
+}
+
+export interface ResultsIndividual {
+  name: string;
+  state: string;
+  group: string;
+  estimate: number;
+  error: number;
+}
+
+export interface ResultsPeriod {
+  period: string;          // "AUG", "SEP", "YEAR", …
+  usdaYield: number;
+}
+
+export interface UsdaResults {
+  commodity: string;
+  year: number;
+  usdaYield: number | null;
+  period: string;          // which report is being scored
+  cutoff: string | null;   // NASS publication timestamp (the cheat-proof gate)
+  availablePeriods: ResultsPeriod[];
+  participants: number;
+  byGroup: ResultsRankRow[];
+  byState: ResultsRankRow[];
+  topIndividuals: ResultsIndividual[];
+  message?: string;
 }
 
 export interface PlantingSnapshot {
@@ -239,22 +277,6 @@ export interface SoilMoistureRow {
   GWETTOP:  number | null;
   GWETROOT: number | null;
   GWETPROF: number | null;
-}
-
-export interface GddRow {
-  date: string;
-  T2M_MAX: number | null;
-  T2M_MIN: number | null;
-  gdd: number | null;
-}
-
-export interface GddResponse {
-  totalGdd: number;
-  days: number;
-  plantedOn: string;
-  base: number;
-  cap: number;
-  rows: GddRow[];
 }
 
 /**
@@ -367,6 +389,11 @@ export const api = {
 
   getYieldGuesses: (commodity: string) =>
     get<YieldGuess[]>(`/api/yield-guess/${commodity}`),
+
+  getUsdaResults: (commodity: string, period?: string) =>
+    get<UsdaResults>(
+      `/api/usda-results/${commodity}${period ? `?period=${encodeURIComponent(period)}` : ''}`,
+    ),
   submitYieldGuess: async (body: YieldGuess): Promise<YieldGuess> => {
     const res = await fetch(`${BASE}/api/yield-guess`, {
       method: 'POST', credentials: 'include',
@@ -376,6 +403,19 @@ export const api = {
     if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
     return res.json();
   },
+
+  submitFeedback: async (body: { name?: string; email?: string; message: string }): Promise<Feedback> => {
+    const res = await fetch(`${BASE}/api/feedback`, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    return res.json();
+  },
+
+  // Admin-only feedback inbox
+  getFeedback: () => get<Feedback[]>(`/api/feedback`),
 
   getWeather: (gridID: string, gridX: string, gridY: string) =>
     get<WeatherPeriod[]>(`/fetch-weather?gridID=${gridID}&gridX=${gridX}&gridY=${gridY}`),
@@ -401,40 +441,6 @@ export const api = {
     get<SoilMoistureRow[]>(
       `/api/soil-moisture?lat=${lat}&lon=${lon}&days=${days}`,
     ),
-
-  getGdd: (lat: number, lon: number, plantedOn: string, base = 50, cap = 86) =>
-    get<GddResponse>(
-      `/api/gdd?lat=${lat}&lon=${lon}&plantedOn=${plantedOn}&base=${base}&cap=${cap}`,
-    ),
-
-  // ── Fields ──────────────────────────────────────────────────────
-  listFields: (userId: number) =>
-    get<FieldRecord[]>(`/api/fields/${userId}`),
-
-  createField: async (body: FieldRecord): Promise<FieldRecord> => {
-    const res = await fetch(`${BASE}/api/fields`, {
-      method: 'POST', credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-    return res.json();
-  },
-
-  updateField: async (id: number, body: FieldRecord): Promise<FieldRecord> => {
-    const res = await fetch(`${BASE}/api/fields/${id}`, {
-      method: 'PUT', credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-    return res.json();
-  },
-
-  deleteField: async (id: number): Promise<void> => {
-    const res = await fetch(`${BASE}/api/fields/${id}`, { method: 'DELETE', credentials: 'include' });
-    if (!res.ok && res.status !== 204) throw new Error(`${res.status} ${res.statusText}`);
-  },
 
   // ── Forecast change tracking ────────────────────────────────────
   listForecastLocations: () =>
@@ -471,5 +477,14 @@ export const api = {
     return res.json();
   },
 
+  refreshAllForecastLocations: async (): Promise<ForecastLocation[]> => {
+    const res = await fetch(`${BASE}/api/forecast-locations/refresh-all`, { method: 'POST', credentials: 'include' });
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    return res.json();
+  },
+
   getPrices: () => get<CommodityGroup[]>('/prices'),
+
+  getSupplyDemand: (commodity: string) =>
+    get<SupplyDemandSheet>(`/api/supply-demand/${commodity}`),
 };
