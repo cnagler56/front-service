@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { api, UsdaPlantingReport, UsdaYieldReport, YieldGuess } from '@/src/lib/api';
+import Link from 'next/link';
+import { api, GuessRosterEntry, UsdaPlantingReport, UsdaYieldReport, YieldGuess } from '@/src/lib/api';
 import { useUser } from '@/src/lib/UserContext';
 import styles from '@/src/styles/farm.module.css';
 
@@ -21,29 +22,56 @@ function refPeriodLabel(p: string | undefined, year: number): string {
   return `${map[p] ?? p} ${year}`;
 }
 
+/** localStorage key holding this commodity's per-state edits. */
+const overridesKey = (commodity: string) => `yieldChallenge:overrides:${commodity}`;
+
+/** Read saved per-state edits (SSR-safe). */
+function loadOverrides(commodity: string): Record<string, number> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = window.localStorage.getItem(overridesKey(commodity));
+    return raw ? (JSON.parse(raw) as Record<string, number>) : {};
+  } catch {
+    return {};
+  }
+}
+
 export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 'bu/acre' }: Props) {
   const [data, setData] = useState<UsdaYieldReport | null>(null);
   const [planting, setPlanting] = useState<UsdaPlantingReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
-  const [userYields, setUserYields] = useState<Record<string, number>>({});
+  // Per-state edits, keyed by lowercased state. Only states the user actually
+  // changed are stored (everything else falls back to the live USDA value), and
+  // they're hydrated from localStorage so edits survive leaving the page.
+  const [userYields, setUserYields] = useState<Record<string, number>>(() => loadOverrides(commodity));
 
   // Community guess state
-  const [guesses, setGuesses] = useState<YieldGuess[]>([]);
-  const [name, setName]         = useState('');
-  const [userState, setUserState] = useState('');
-  const [interest, setInterest] = useState('');
+  const [guesses, setGuesses] = useState<GuessRosterEntry[]>([]);
+  const [note, setNote]         = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitMsg, setSubmitMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  // Lazy-loaded change logs, keyed by userId; null entry = currently loading.
+  const [history, setHistory] = useState<Record<number, YieldGuess[] | null>>({});
+  const [expanded, setExpanded] = useState<number | null>(null);
+  // Guests can browse, but the first attempt to edit a value prompts them to sign in.
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const { user } = useUser();
 
-  // Pre-fill name / state / interest from the signed-in user when known
-  useEffect(() => {
-    if (!user) return;
-    if (user.firstName) setName(`${user.firstName} ${user.lastName ?? ''}`.trim());
-    if (user.state)     setUserState(user.state);
-    if (user.interest)  setInterest(user.interest);
+  // Name and state are taken straight from the account — not editable here, so
+  // people can't enter the challenge under a different name or location. Role
+  // (interest) is likewise sent automatically from the profile.
+  const guessName = useMemo(() => {
+    if (!user) return '';
+    return `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.name || user.username || '';
   }, [user]);
+  const guessState = user?.state ?? '';
+
+  // Has the signed-in user already entered the challenge? (controls form wording)
+  const alreadyGuessed = useMemo(
+    () => user != null && guesses.some(g => g.userId === user.userId),
+    [guesses, user],
+  );
 
   // Initial load — USDA data + community guesses for this commodity
   useEffect(() => {
@@ -65,15 +93,27 @@ export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 
         if (cancelled) return;
         setData(d);
         setPlanting(p);
-        const init: Record<string, number> = {};
-        d.currentEstimates.forEach(row => { init[row.state.toLowerCase()] = row.yieldBu; });
-        setUserYields(init);
+        // NB: we intentionally don't seed userYields here — unedited states fall
+        // back to the live USDA value, and the user's saved edits (hydrated from
+        // localStorage) stay intact across reloads.
         setGuesses(g);
       })
       .catch(() => { if (!cancelled) setError(`Could not load ${commodityLabel} yield data.`); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [commodity, commodityLabel]);
+
+  // Persist edits whenever they change so they survive navigating away.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const key = overridesKey(commodity);
+      if (Object.keys(userYields).length === 0) window.localStorage.removeItem(key);
+      else window.localStorage.setItem(key, JSON.stringify(userYields));
+    } catch {
+      /* ignore storage errors (quota / private mode) */
+    }
+  }, [userYields, commodity]);
 
   /**
    * Choose the "best available" acreage source for the production-weighted
@@ -100,7 +140,7 @@ export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 
     // 1. Current-year harvested acres ride along on the current yield snapshots
     const currentHarvested = new Map<string, number>();
     data?.currentEstimates.forEach(r => { if (r.acres != null) currentHarvested.set(r.state, r.acres); });
-    if (!data?.fellBack && currentHarvested.size > 0) {
+    if (data && !data.fellBack && currentHarvested.size > 0) {
       priorHarvested.forEach((v, k) => { if (!currentHarvested.has(k)) currentHarvested.set(k, v); });
       return {
         byState: currentHarvested,
@@ -164,26 +204,54 @@ export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 
     return (sum / guesses.length).toFixed(1);
   }, [guesses]);
 
+  // Baseline (live USDA) value per state, for pruning no-op edits.
+  const baseline = useMemo(() => {
+    const m = new Map<string, number>();
+    data?.currentEstimates.forEach(r => m.set(r.state.toLowerCase(), r.yieldBu));
+    return m;
+  }, [data]);
+
+  const editedCount = Object.keys(userYields).length;
+
   function updateYield(stateKey: string, value: string) {
     const n = parseFloat(value);
-    if (!isNaN(n)) setUserYields(prev => ({ ...prev, [stateKey]: n }));
+    if (isNaN(n)) return;
+    setUserYields(prev => {
+      const next = { ...prev };
+      const base = baseline.get(stateKey);
+      // If the user lands back on the USDA value, drop the override entirely so
+      // unedited states keep tracking live USDA data.
+      if (base != null && Math.abs(n - base) < 0.05) delete next[stateKey];
+      else next[stateKey] = n;
+      return next;
+    });
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!nationalEstimate) return;
+  function resetEdits() {
+    setUserYields({});
+  }
+
+  async function submitGuess() {
+    if (!user || !nationalEstimate) return;
     setSubmitting(true);
     setSubmitMsg(null);
     try {
       await api.submitYieldGuess({
         commodity,
         estimate: parseFloat(nationalEstimate),
-        name: name.trim(),
-        state: userState.trim(),
-        interest: interest.trim(),
-        userId: user?.userId ?? 0,
+        name: guessName,                  // from the account, not editable
+        state: guessState,                // from the account, not editable
+        interest: user.interest ?? '',    // sent automatically from the profile
+        note: note.trim() || undefined,
       });
-      setSubmitMsg({ ok: true, text: `Your ${commodityLabel.toLowerCase()} estimate of ${nationalEstimate} ${unit} was submitted!` });
+      setSubmitMsg({
+        ok: true,
+        text: `${alreadyGuessed ? 'Your updated' : 'Your'} ${commodityLabel.toLowerCase()} estimate of ${nationalEstimate} ${unit} was submitted!`,
+      });
+      setNote('');
+      // Refresh the roster, and drop any cached change log so it reloads on demand.
+      setHistory({});
+      setExpanded(null);
       const updated = await api.getYieldGuesses(commodity);
       setGuesses(updated);
     } catch {
@@ -191,6 +259,27 @@ export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 
     } finally {
       setSubmitting(false);
     }
+  }
+
+  // Expand/collapse a user's change log, fetching it the first time it's opened.
+  async function toggleHistory(userId: number | null) {
+    if (userId == null) return;
+    if (expanded === userId) { setExpanded(null); return; }
+    setExpanded(userId);
+    if (history[userId] === undefined) {
+      setHistory(prev => ({ ...prev, [userId]: null }));   // mark loading
+      try {
+        const log = await api.getGuessHistory(commodity, userId);
+        setHistory(prev => ({ ...prev, [userId]: log }));
+      } catch {
+        setHistory(prev => ({ ...prev, [userId]: [] }));
+      }
+    }
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    submitGuess();
   }
 
   if (loading) return <p className={styles.loading}>Loading {commodityLabel} yield data…</p>;
@@ -210,9 +299,27 @@ export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 
         <div className={styles.sectionHead}>
           <span>📊</span>
           <h2>{commodityLabel} — Yield by State</h2>
-          <span style={{ marginLeft: 'auto', color: '#a8cc78', fontSize: '.75rem', fontFamily: 'Lato, sans-serif' }}>
-            Edit any row to adjust your estimate
-          </span>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '.6rem' }}>
+            {editedCount > 0 && (
+              <button
+                type="button"
+                onClick={resetEdits}
+                title="Discard your edits and snap every state back to the USDA value"
+                style={{
+                  background: 'transparent', border: '1px solid #a8cc78', color: '#d8ecc0',
+                  borderRadius: 4, padding: '.2rem .55rem', fontSize: '.72rem', cursor: 'pointer',
+                  fontFamily: 'Lato, sans-serif', whiteSpace: 'nowrap',
+                }}
+              >
+                ↺ Reset to USDA
+              </button>
+            )}
+            <span style={{ color: '#a8cc78', fontSize: '.75rem', fontFamily: 'Lato, sans-serif', whiteSpace: 'nowrap' }}>
+              {editedCount > 0
+                ? `${editedCount} edited · saved ✓`
+                : 'Edit any row to adjust your estimate'}
+            </span>
+          </div>
         </div>
         <div style={{ overflowY: 'auto', maxHeight: '62vh' }}>
           <table className={styles.cornTable}>
@@ -256,7 +363,11 @@ export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 
                         type="number"
                         step="0.1"
                         value={userVal}
-                        onChange={e => updateYield(key, e.target.value)}
+                        readOnly={!user}
+                        onChange={e => { if (user) updateYield(key, e.target.value); }}
+                        onMouseDown={!user ? e => { e.preventDefault(); setShowAuthPrompt(true); } : undefined}
+                        onFocus={!user ? () => setShowAuthPrompt(true) : undefined}
+                        title={!user ? 'Sign in to adjust estimates' : undefined}
                         className={`${styles.stateInput} ${modified ? styles.stateInputModified : ''}`}
                       />
                     </td>
@@ -311,19 +422,35 @@ export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 
                 {submitMsg.text}
               </div>
             )}
+            {!user ? (
+              <p className={styles.empty} style={{ margin: 0 }}>
+                <Link href="/signin" style={{ color: '#3d6b2a', fontWeight: 700 }}>Sign in</Link>{' '}
+                to lock in your guess. Your name, state, and role come from your account.
+              </p>
+            ) : (
             <form className={styles.form} onSubmit={handleSubmit}>
-              <div className={styles.formRow}>
-                <label>Your Name</label>
-                <input value={name} onChange={e => setName(e.target.value)} placeholder="John Smith" required />
+              <div style={{
+                fontFamily: 'Lato, sans-serif', fontSize: '.8rem', color: '#555',
+                background: '#f7f5ef', border: '1px solid #e1dccc', borderRadius: 4,
+                padding: '.55rem .8rem',
+              }}>
+                Entering as <strong style={{ color: '#2c4a1e' }}>{guessName || '—'}</strong>
+                {guessState && <> · <strong style={{ color: '#2c4a1e' }}>{guessState}</strong></>}
+                <div style={{ fontSize: '.7rem', color: '#888', marginTop: '.15rem' }}>
+                  Name and state come from your account.
+                </div>
               </div>
-              <div className={styles.formRow}>
-                <label>Your State</label>
-                <input value={userState} onChange={e => setUserState(e.target.value)} placeholder="Iowa" required />
-              </div>
-              <div className={styles.formRow}>
-                <label>Your Role</label>
-                <input value={interest} onChange={e => setInterest(e.target.value)} placeholder="Farmer, Analyst, Trader…" />
-              </div>
+              {alreadyGuessed && (
+                <div className={styles.formRow}>
+                  <label>Why the change? <span style={{ fontWeight: 400, color: '#888' }}>(optional)</span></label>
+                  <input
+                    value={note}
+                    onChange={e => setNote(e.target.value)}
+                    maxLength={280}
+                    placeholder="e.g. USDA raised Iowa & Illinois"
+                  />
+                </div>
+              )}
               <div style={{
                 background: '#f0fdf4',
                 border: '1px solid #c3e6cb',
@@ -340,12 +467,17 @@ export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 
               <button
                 type="submit"
                 className={styles.btn}
-                disabled={submitting || !nationalEstimate || !name}
+                disabled={submitting || !nationalEstimate}
                 style={{ width: '100%', textAlign: 'center' }}
               >
-                {submitting ? 'Submitting…' : `✏️ Submit My ${commodityLabel} Estimate`}
+                {submitting
+                  ? 'Submitting…'
+                  : alreadyGuessed
+                    ? `✏️ Update My ${commodityLabel} Estimate`
+                    : `✏️ Submit My ${commodityLabel} Estimate`}
               </button>
             </form>
+            )}
           </div>
         </div>
 
@@ -385,21 +517,137 @@ export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 
             {guesses.length === 0 ? (
               <p className={styles.empty}>No guesses yet — be the first!</p>
             ) : (
-              guesses.map((g, i) => (
-                <div key={g.id ?? i} className={styles.guessCard}>
-                  <div style={{ flex: 1 }}>
-                    <div className={styles.guessName}>{g.name || 'Anonymous'}</div>
-                    <div className={styles.guessMeta}>
-                      {[g.state, g.interest].filter(Boolean).join(' · ')}
+              guesses.map((g, i) => {
+                const open = g.userId != null && expanded === g.userId;
+                const log = g.userId != null ? history[g.userId] : undefined;
+                return (
+                  <div key={g.latestId ?? i}>
+                    <div className={styles.guessCard}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className={styles.guessName}>
+                          {g.name || 'Anonymous'}
+                          {g.updated && (
+                            <span
+                              title={`Updated ${g.revisions - 1} time${g.revisions - 1 !== 1 ? 's' : ''}`}
+                              style={{
+                                marginLeft: '.4rem', fontSize: '.62rem', fontWeight: 700,
+                                color: '#7a5c00', background: '#fdf1c9', border: '1px solid #ecd98a',
+                                borderRadius: 10, padding: '0 .4rem', verticalAlign: 'middle',
+                                fontFamily: 'Lato, sans-serif', textTransform: 'uppercase', letterSpacing: '.03em',
+                              }}
+                            >
+                              updated
+                            </span>
+                          )}
+                        </div>
+                        <div className={styles.guessMeta}>
+                          {[g.state, g.interest].filter(Boolean).join(' · ')}
+                        </div>
+                        {g.updated && g.note && (
+                          <div style={{
+                            fontFamily: 'Lato, sans-serif', fontSize: '.72rem', color: '#666',
+                            fontStyle: 'italic', marginTop: '.2rem',
+                          }}>
+                            “{g.note}”
+                          </div>
+                        )}
+                        {g.updated && (
+                          <button
+                            type="button"
+                            onClick={() => toggleHistory(g.userId)}
+                            style={{
+                              background: 'none', border: 'none', padding: 0, marginTop: '.25rem',
+                              color: '#3d6b2a', fontSize: '.7rem', fontWeight: 700, cursor: 'pointer',
+                              fontFamily: 'Lato, sans-serif',
+                            }}
+                          >
+                            {open ? '▾ Hide history' : `▸ History (${g.revisions})`}
+                          </button>
+                        )}
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginLeft: 'auto' }}>
+                        <div className={styles.guessValue} style={{ margin: 0 }}>{g.estimate.toFixed(1)}</div>
+                        {g.direction && g.direction !== 'same' && g.delta != null && (
+                          <span className={g.direction === 'up' ? styles.diffUp : styles.diffDown} style={{ minWidth: 0 }}>
+                            {g.direction === 'up' ? '▲' : '▼'} {g.delta > 0 ? '+' : ''}{g.delta.toFixed(1)} vs last
+                          </span>
+                        )}
+                      </div>
                     </div>
+
+                    {open && (
+                      <div style={{
+                        background: '#f9fbf4', borderBottom: '1px solid #f0ede8',
+                        padding: '.4rem 1rem .65rem 1.5rem', fontFamily: 'Lato, sans-serif',
+                      }}>
+                        {log === null || log === undefined ? (
+                          <div style={{ fontSize: '.74rem', color: '#888' }}>Loading history…</div>
+                        ) : log.length === 0 ? (
+                          <div style={{ fontSize: '.74rem', color: '#888' }}>No earlier revisions.</div>
+                        ) : (
+                          [...log].reverse().map((rev, j) => {
+                            const earlier = log[log.length - 2 - j];   // revision just before this one
+                            const d = earlier ? +(rev.estimate - earlier.estimate).toFixed(1) : null;
+                            return (
+                              <div key={rev.id ?? j} style={{
+                                display: 'flex', alignItems: 'baseline', gap: '.5rem',
+                                fontSize: '.74rem', color: '#555', padding: '.15rem 0',
+                              }}>
+                                <span style={{ color: '#999', minWidth: 86 }}>
+                                  {rev.date ? new Date(rev.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '—'}
+                                </span>
+                                <strong style={{ color: '#2c4a1e' }}>{rev.estimate.toFixed(1)}</strong>
+                                {d != null && d !== 0 && (
+                                  <span className={d > 0 ? styles.diffUp : styles.diffDown} style={{ minWidth: 0 }}>
+                                    {d > 0 ? '+' : ''}{d.toFixed(1)}
+                                  </span>
+                                )}
+                                {j === 0 && <span style={{ color: '#999' }}>(current)</span>}
+                                {rev.note && <span style={{ fontStyle: 'italic', color: '#777' }}>— “{rev.note}”</span>}
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <div className={styles.guessValue}>{g.estimate.toFixed(1)}</div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
       </div>
+
+      {showAuthPrompt && (
+        <div
+          className={styles.modalOverlay}
+          role="dialog"
+          aria-modal="true"
+          onMouseDown={e => { if (e.target === e.currentTarget) setShowAuthPrompt(false); }}
+        >
+          <div className={styles.modalCard}>
+            <div className={styles.modalHead}>
+              <h2>Join the USDA Challenge</h2>
+              <button className={styles.modalClose} onClick={() => setShowAuthPrompt(false)} aria-label="Close">×</button>
+            </div>
+            <div className={styles.modalBody}>
+              <p style={{ fontFamily: 'Lato, sans-serif', color: '#555', margin: '0 0 1rem' }}>
+                Sign in or create a free account to adjust state yields and lock in your own{' '}
+                {commodityLabel.toLowerCase()} estimate. You can keep browsing without an account.
+              </p>
+              <div className={styles.modalActions}>
+                <Link href="/signin" className={styles.btnSecondary} style={{ textDecoration: 'none' }}>
+                  Sign in
+                </Link>
+                <Link href="/signin?mode=signup" className={styles.btn} style={{ textDecoration: 'none' }}>
+                  Create account
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

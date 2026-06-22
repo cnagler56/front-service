@@ -2,36 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { ForecastLocation } from '@/src/lib/api';
+import { geocodeUS } from '@/src/lib/geocode';
 import sharedStyles from '@/src/styles/farm.module.css';
 
 interface Props {
   initial?: ForecastLocation | null;
   onSave: (l: ForecastLocation) => Promise<void> | void;
   onClose: () => void;
-}
-
-/**
- * Look up US coordinates for a free-text place name via OpenStreetMap Nominatim.
- * Returns null if nothing was found or the request failed — callers should fall
- * back to manual coordinate entry.
- */
-async function geocodeUS(query: string): Promise<{ lat: number; lon: number } | null> {
-  const q = query.trim();
-  if (!q) return null;
-  try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}`
-      + `&format=json&countrycodes=us&limit=1`,
-    );
-    if (!res.ok) return null;
-    const hits: Array<{ lat: string; lon: string }> = await res.json();
-    if (!hits.length) return null;
-    const lat = parseFloat(hits[0].lat);
-    const lon = parseFloat(hits[0].lon);
-    return isFinite(lat) && isFinite(lon) ? { lat, lon } : null;
-  } catch {
-    return null;
-  }
 }
 
 export default function ForecastLocationModal({ initial, onSave, onClose }: Props) {

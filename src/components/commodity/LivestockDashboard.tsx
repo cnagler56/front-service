@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { api, AnimalData, CommodityGroup } from '@/src/lib/api';
+import { api, AnimalData, CommodityGroup, LivestockReport } from '@/src/lib/api';
 import { useUser } from '@/src/lib/UserContext';
+import CotPanel from './CotPanel';
 import styles from './commodityDashboard.module.css';
 
 interface Props {
@@ -15,6 +16,8 @@ interface Props {
   defaultMonth: string;
   /** Friendly description shown under the inventory headline. */
   inventoryDescription: string;
+  /** Optional second futures group to show (e.g. "Feeder Cattle" on the cattle page). */
+  extraPricesGroupName?: string;
 }
 
 function fmtNum(n: number | null | undefined, digits = 0): string {
@@ -34,10 +37,29 @@ function fmtPrice(n: number | null | undefined): string {
   return n.toFixed(2);
 }
 
+/** Unix seconds → "as of Jun 18, 1:20 PM" (the quote's timestamp from Yahoo). */
+function fmtAsOf(sec: number | null | undefined): string {
+  if (!sec) return '';
+  const d = new Date(sec * 1000);
+  if (isNaN(d.getTime())) return '';
+  return `as of ${d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`;
+}
+
 function parseInventory(v: string | null | undefined): number | null {
   if (!v) return null;
   const n = parseFloat(String(v).replace(/,/g, ''));
   return Number.isFinite(n) ? n : null;
+}
+
+/** NASS "FIRST OF APR" → "Apr". */
+function periodShort(p: string | undefined): string {
+  const months: Record<string, string> = {
+    JAN: 'Jan', FEB: 'Feb', MAR: 'Mar', APR: 'Apr', MAY: 'May', JUN: 'Jun',
+    JUL: 'Jul', AUG: 'Aug', SEP: 'Sep', OCT: 'Oct', NOV: 'Nov', DEC: 'Dec',
+  };
+  const up = (p ?? '').toUpperCase();
+  for (const k of Object.keys(months)) if (up.includes(k)) return months[k];
+  return p ?? '';
 }
 
 /**
@@ -76,15 +98,23 @@ function summarize(rows: AnimalData[]): {
 
 export default function LivestockDashboard({
   commodity, commodityLabel, commodityIcon, pricesGroupName,
-  defaultMonth, inventoryDescription,
+  defaultMonth, inventoryDescription, extraPricesGroupName,
 }: Props) {
   const { user } = useUser();
   const [prices, setPrices]           = useState<CommodityGroup | null>(null);
+  const [extraPrices, setExtraPrices] = useState<CommodityGroup | null>(null);
   const [currentRows, setCurrentRows] = useState<AnimalData[]>([]);
-  const [priorRows, setPriorRows]     = useState<AnimalData[]>([]);
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState('');
-  const [reportYear, setReportYear]   = useState<number | null>(null);
+  const [headline, setHeadline]       = useState<LivestockReport | null>(null);
+
+  // National marquee report — Cattle on Feed (monthly) or Hogs & Pigs (quarterly).
+  useEffect(() => {
+    let cancelled = false;
+    const p = commodity === 'CATTLE' ? api.getCattleOnFeed() : api.getHogsAndPigs();
+    p.then(r => { if (!cancelled) setHeadline(r); }).catch(() => { if (!cancelled) setHeadline(null); });
+    return () => { cancelled = true; };
+  }, [commodity]);
 
   useEffect(() => {
     let cancelled = false;
@@ -112,34 +142,20 @@ export default function LivestockDashboard({
         usedYear = startYear - 1;
         current = await tryYear(usedYear);
       }
-      const prior = await tryYear(usedYear - 1);
-
       const pricesAll = await pricesPromise;
       if (cancelled) return;
 
       setPrices(pricesAll.find(g => g.name === pricesGroupName) ?? null);
+      setExtraPrices(extraPricesGroupName ? (pricesAll.find(g => g.name === extraPricesGroupName) ?? null) : null);
       setCurrentRows(current);
-      setPriorRows(prior);
-      setReportYear(current.length > 0 ? usedYear : null);
     })()
       .catch(() => { if (!cancelled) setError(`Could not load ${commodityLabel} dashboard data.`); })
       .finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
-  }, [commodity, commodityLabel, defaultMonth, pricesGroupName]);
+  }, [commodity, commodityLabel, defaultMonth, pricesGroupName, extraPricesGroupName]);
 
   const summary  = useMemo(() => summarize(currentRows), [currentRows]);
-  const prior    = useMemo(() => summarize(priorRows), [priorRows]);
-  const yoyPct   = useMemo(() => {
-    if (summary.usTotal == null || prior.usTotal == null || prior.usTotal === 0) return null;
-    return ((summary.usTotal - prior.usTotal) / prior.usTotal) * 100;
-  }, [summary, prior]);
-
-  const userInTop5 = useMemo(() => {
-    const st = (user?.state ?? '').trim().toUpperCase();
-    if (!st) return false;
-    return summary.topStates.some(r => r.state.toUpperCase() === st);
-  }, [summary, user]);
 
   const frontPrice = prices?.contracts?.[0];
 
@@ -179,6 +195,11 @@ export default function LivestockDashboard({
                   {fmtPrice(frontPrice.last)} <span className={styles.unitLabel}>{prices?.unit}</span>
                 </div>
                 <ChangePill change={frontPrice.change ?? null} pct={frontPrice.changePercent ?? null} />
+                {frontPrice.asOf && (
+                  <div style={{ fontFamily: 'Lato, sans-serif', fontSize: '.68rem', color: '#8aa06a', marginTop: '.3rem' }}>
+                    {fmtAsOf(frontPrice.asOf)} · ~10-min delayed
+                  </div>
+                )}
               </div>
               <div className={styles.deferredTable}>
                 {(prices?.contracts ?? []).slice(1).map(c => (
@@ -194,51 +215,77 @@ export default function LivestockDashboard({
         </div>
       </div>
 
-      {/* ── USDA Inventory headline ──────────────────────────── */}
-      <div className={styles.section}>
-        <div className={styles.sectionHead}>
-          <span>🏛️</span>
-          <h2>USDA Inventory</h2>
-          <Link href="/usda-reports" className={styles.headLink}>Full report →</Link>
-        </div>
-        {summary.usTotal == null ? (
-          <p className={styles.empty}>
-            No recent inventory data — the NASS report for this commodity may not have been published yet.
-          </p>
-        ) : (
-          <div className={styles.statGrid}>
-            <Stat
-              label={`US Total${reportYear ? ` — ${reportYear}` : ''}`}
-              value={fmtNum(summary.usTotal, 0)}
-              unit="head"
-              big
-            />
-            <Stat
-              label="YoY Change"
-              value={yoyPct != null
-                ? `${yoyPct > 0 ? '+' : ''}${yoyPct.toFixed(1)}%`
-                : '—'}
-              tone={yoyPct != null
-                ? yoyPct > 0 ? 'up' : yoyPct < 0 ? 'down' : undefined
-                : undefined}
-            />
-            <Stat
-              label="Top State"
-              value={summary.topStates[0]?.state ?? '—'}
-              footnote={summary.topStates[0]
-                ? `${fmtNum(summary.topStates[0].head, 0)} head`
-                : undefined}
-            />
-            <Stat
-              label="Your State in Top 5?"
-              value={userInTop5 ? '⭐ Yes' : (user?.state ?? '—')}
-              footnote={userInTop5
-                ? 'see the table below'
-                : (user?.state ? 'outside top 5' : 'sign in & set state')}
-            />
+      {/* ── Secondary futures (e.g. Feeder Cattle) ───────────── */}
+      {extraPrices?.contracts?.[0] && (
+        <div className={styles.section}>
+          <div className={styles.sectionHead}>
+            <span>🐄</span>
+            <h2>{extraPrices.name} Futures</h2>
           </div>
-        )}
-      </div>
+          <div className={styles.priceStrip}>
+            <div className={styles.frontPrice}>
+              <div className={styles.frontLabel}>{extraPrices.contracts[0].expiration} (front)</div>
+              <div className={styles.frontValue}>
+                {fmtPrice(extraPrices.contracts[0].last)} <span className={styles.unitLabel}>{extraPrices.unit}</span>
+              </div>
+              <ChangePill change={extraPrices.contracts[0].change ?? null} pct={extraPrices.contracts[0].changePercent ?? null} />
+            </div>
+            <div className={styles.deferredTable}>
+              {extraPrices.contracts.slice(1).map(c => (
+                <div key={c.symbol} className={styles.deferredRow}>
+                  <span className={styles.deferredExp}>{c.expiration}</span>
+                  <span className={styles.deferredLast}>{fmtPrice(c.last)}</span>
+                  <ChangePill compact change={c.change ?? null} pct={null} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Managed Money (CFTC Commitments of Traders) ──────── */}
+      <CotPanel
+        commodity={commodity === 'CATTLE' ? 'LIVE_CATTLE' : 'LEAN_HOGS'}
+        commodityLabel={commodityLabel}
+      />
+
+      {/* ── Marquee NASS report: Cattle on Feed / Hogs & Pigs ── */}
+      {headline && (headline.value != null || headline.all != null) && (
+        <div className={styles.section}>
+          <div className={styles.sectionHead}>
+            <span>{commodity === 'CATTLE' ? '🐂' : '🐷'}</span>
+            <h2>{headline.report}</h2>
+            {headline.period && (
+              <span style={{ marginLeft: 'auto', fontSize: '.72rem', color: '#8aa06a', fontFamily: 'Lato, sans-serif' }}>
+                USDA NASS · {periodShort(headline.period)}{headline.year ? ` ${headline.year}` : ''}
+              </span>
+            )}
+          </div>
+          <div className={styles.statGrid}>
+            {commodity === 'CATTLE' ? (
+              <>
+                <Stat label="On Feed (1,000+ head lots)" value={fmtNum(headline.value, 0)} unit="head" big />
+                <Stat
+                  label="YoY"
+                  value={headline.yoyPct != null ? `${headline.yoyPct > 0 ? '+' : ''}${headline.yoyPct}%` : '—'}
+                  tone={headline.yoyPct != null ? (headline.yoyPct > 0 ? 'up' : headline.yoyPct < 0 ? 'down' : undefined) : undefined}
+                />
+              </>
+            ) : (
+              <>
+                <Stat label="All Hogs" value={fmtNum(headline.all, 0)} unit="head" big />
+                <Stat label="Breeding Herd" value={fmtNum(headline.breeding, 0)} unit="head" />
+                <Stat label="Market Hogs" value={fmtNum(headline.market, 0)} unit="head" />
+                <Stat
+                  label="YoY (all hogs)"
+                  value={headline.yoyPct != null ? `${headline.yoyPct > 0 ? '+' : ''}${headline.yoyPct}%` : '—'}
+                  tone={headline.yoyPct != null ? (headline.yoyPct > 0 ? 'up' : headline.yoyPct < 0 ? 'down' : undefined) : undefined}
+                />
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Top producing states ─────────────────────────────── */}
       <div className={styles.section}>

@@ -37,6 +37,13 @@ export function useForecastLocations() {
     return created;
   }
 
+  /** Force a fresh NWS pull for every location and swap in the updated list. */
+  async function refreshAll(): Promise<ForecastLocation[]> {
+    const rows = await api.refreshAllForecastLocations();
+    setLocations(rows);
+    return rows;
+  }
+
   /** Delete with confirmation. Returns false if the user cancelled. */
   async function remove(loc: ForecastLocation): Promise<boolean> {
     if (!loc.id) return false;
@@ -51,5 +58,5 @@ export function useForecastLocations() {
     }
   }
 
-  return { locations, loading, error, save, remove };
+  return { locations, loading, error, save, remove, refreshAll };
 }

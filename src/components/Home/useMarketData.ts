@@ -8,7 +8,7 @@ const API_URL =
 const useMarketData = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -21,7 +21,7 @@ const useMarketData = () => {
         const json = await res.json();
         setData(json);
       } catch (err) {
-        if (err.name !== "AbortError") setError(err.message);
+        if (err instanceof Error && err.name !== "AbortError") setError(err.message);
       } finally {
         setLoading(false);
       }

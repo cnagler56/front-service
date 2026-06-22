@@ -55,9 +55,13 @@ const CommodityPrices = () => {
           <p style={{ color: '#c2410c', textAlign: 'center', width: '100%', fontSize: '.85rem' }}>{error}</p>
         ) : (
           <div className={styles.priceGrid}>
-            {groups.map(g => (
-              <CommodityCard key={g.name} group={g} />
-            ))}
+            {/* Soybean Meal / Oil (their own pages) and Feeder Cattle (shown on the
+                Cattle page) are intentionally kept off the home "all commodities" grid. */}
+            {groups
+              .filter(g => !['Soybean Meal', 'Soybean Oil', 'Feeder Cattle'].includes(g.name))
+              .map(g => (
+                <CommodityCard key={g.name} group={g} />
+              ))}
           </div>
         )}
       </div>
@@ -111,6 +115,11 @@ function CommodityCard({ group }) {
               )}
             </span>
           </div>
+          {front.asOf && (
+            <div style={{ fontSize: '.66rem', color: '#9aa886', marginTop: '.25rem', fontFamily: 'Lato, sans-serif' }}>
+              {fmtAsOf(front.asOf)}
+            </div>
+          )}
         </>
       )}
 
@@ -148,6 +157,14 @@ function CommodityCard({ group }) {
       )}
     </div>
   );
+}
+
+/** Unix seconds → "as of Jun 18, 1:20 PM" — the quote's own timestamp (Yahoo). */
+function fmtAsOf(sec) {
+  if (!sec) return '';
+  const d = new Date(sec * 1000);
+  if (isNaN(d.getTime())) return '';
+  return 'as of ' + d.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
 
 function formatSigned(n) {

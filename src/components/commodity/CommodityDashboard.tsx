@@ -6,18 +6,19 @@ import {
   api,
   CommodityGroup,
   CropProgressData,
-  NASSYieldData,
   UsdaYieldReport,
 } from '@/src/lib/api';
 import { useUser } from '@/src/lib/UserContext';
-import YieldHistoryChart, { Series, colorFor } from '@/src/components/YieldHistoryChart';
+import SupplyDemandBox from './SupplyDemandBox';
+import CotPanel from './CotPanel';
 import styles from './commodityDashboard.module.css';
 
 interface Props {
-  commodity: string;            // NASS code: "CORN" / "SOYBEANS" / "WHEAT"
-  commodityLabel: string;       // "Corn" / "Soybeans" / "Wheat"
+  commodity: string;            // NASS / WASDE code: "CORN" / "SOYBEANS" / "SOYBEAN_MEAL" …
+  commodityLabel: string;       // "Corn" / "Soybeans" / "Soybean Meal"
   commodityIcon: string;        // "🌽" / "🫘" / "🌾"
-  pricesGroupName: string;      // matches CommodityGroup.name in /prices ("Corn" / "Soybeans" / "Wheat")
+  pricesGroupName: string;      // matches CommodityGroup.name in /prices
+  crushProduct?: boolean;       // meal/oil: no NASS yield or crop progress, so hide those panels
 }
 
 /** "AUG" → "Aug 2026", "YEAR" → "Final 2025" */
@@ -45,6 +46,14 @@ function fmtPrice(n: number | null | undefined): string {
   return n.toFixed(2);
 }
 
+/** Unix seconds → "as of Jun 18, 1:20 PM" (the quote's timestamp from Yahoo). */
+function fmtAsOf(sec: number | null | undefined): string {
+  if (!sec) return '';
+  const d = new Date(sec * 1000);
+  if (isNaN(d.getTime())) return '';
+  return `as of ${d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`;
+}
+
 function fmtWeek(iso: string): string {
   if (!iso) return '';
   const [, m, d] = iso.split('-');
@@ -56,6 +65,32 @@ function stageLabel(unit: string | undefined): string {
   const u = unit.toUpperCase().replace(/^PCT\s+/, '');
   return u.charAt(0) + u.substring(1).toLowerCase();
 }
+
+/**
+ * Wheat progress is reported per class (Winter / Spring / Durum), and they're at
+ * very different stages at any given week — so they must not be averaged together.
+ * Returns a short class label, or '' for single-class crops (corn, soybeans).
+ */
+function cropClass(shortDesc: string | undefined): string {
+  if (!shortDesc) return '';
+  const head = shortDesc.split(' - ')[0].toUpperCase(); // e.g. "WHEAT, SPRING, DURUM"
+  if (!head.startsWith('WHEAT')) return '';
+  if (head.includes('WINTER')) return 'Winter';
+  if (head.includes('DURUM'))  return 'Durum';
+  if (head.includes('SPRING')) return 'Spring';
+  return '';
+}
+
+/** Natural progression order so stage bars read in a sensible sequence. */
+const STAGE_ORDER = [
+  'PLANTED', 'EMERGED', 'BREAKING DORMANCY', 'JOINTING', 'BOOTED',
+  'HEADED', 'COLORING', 'MATURE', 'HARVESTED', 'PASTURED',
+];
+function stageRank(unit: string): number {
+  const i = STAGE_ORDER.indexOf(unit.toUpperCase().replace(/^PCT\s+/, ''));
+  return i < 0 ? 99 : i;
+}
+const CLASS_ORDER: Record<string, number> = { '': 0, Winter: 1, Spring: 2, Durum: 3 };
 
 /** Production-weighted national yield from a list of state snapshots. */
 function nationalAvg(rows: { yieldBu?: number; acres?: number | null }[]): number | null {
@@ -69,13 +104,12 @@ function nationalAvg(rows: { yieldBu?: number; acres?: number | null }[]): numbe
 }
 
 export default function CommodityDashboard({
-  commodity, commodityLabel, commodityIcon, pricesGroupName,
+  commodity, commodityLabel, commodityIcon, pricesGroupName, crushProduct = false,
 }: Props) {
   const { user } = useUser();
   const [prices, setPrices]           = useState<CommodityGroup | null>(null);
   const [yieldReport, setYieldReport] = useState<UsdaYieldReport | null>(null);
   const [progress, setProgress]       = useState<CropProgressData[]>([]);
-  const [history, setHistory]         = useState<NASSYieldData[]>([]);
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState('');
 
@@ -88,15 +122,14 @@ export default function CommodityDashboard({
 
     Promise.all([
       api.getPrices().catch(() => [] as CommodityGroup[]),
-      api.getUsdaYield(commodity).catch(() => null),
-      api.getCropProgress(commodity, thisYear).catch(() => [] as CropProgressData[]),
-      api.getYieldHistory(commodity, 5).catch(() => [] as NASSYieldData[]),
-    ]).then(([pricesAll, yieldData, cropProgress, yieldHist]) => {
+      // Crush products (meal/oil) have no NASS yield or crop-progress series — skip those calls.
+      crushProduct ? Promise.resolve(null) : api.getUsdaYield(commodity).catch(() => null),
+      crushProduct ? Promise.resolve([] as CropProgressData[]) : api.getCropProgress(commodity, thisYear).catch(() => [] as CropProgressData[]),
+    ]).then(([pricesAll, yieldData, cropProgress]) => {
       if (cancelled) return;
       setPrices(pricesAll.find(g => g.name === pricesGroupName) ?? null);
       setYieldReport(yieldData);
       setProgress(cropProgress);
-      setHistory(yieldHist);
     }).catch(() => {
       if (!cancelled) setError(`Could not load ${commodityLabel} dashboard data.`);
     }).finally(() => {
@@ -104,7 +137,7 @@ export default function CommodityDashboard({
     });
 
     return () => { cancelled = true; };
-  }, [commodity, commodityLabel, pricesGroupName]);
+  }, [commodity, commodityLabel, pricesGroupName, crushProduct]);
 
   // ── Derived: yield headline ───────────────────────────────────────────────
   const yieldHeadline = useMemo(() => {
@@ -114,18 +147,24 @@ export default function CommodityDashboard({
     const yoy = currentNat != null && priorNat != null && priorNat !== 0
       ? ((currentNat - priorNat) / priorNat) * 100
       : null;
-    // Top yielder for current snapshot
-    let topState: { state: string; yield: number } | null = null;
+    // Largest producer = the state contributing the most actual production
+    // (yield × harvested acres), with its share of the US total. Unlike a raw
+    // per-acre "top yielder", this reflects where the crop actually is.
+    let best: { state: string; prod: number } | null = null;
+    let totalProd = 0;
     for (const r of yieldReport.currentEstimates) {
-      if (r.yieldBu == null) continue;
-      if (!topState || r.yieldBu > topState.yield) {
-        topState = { state: r.state, yield: r.yieldBu };
-      }
+      if (r.yieldBu == null || !r.acres) continue;
+      const prod = r.yieldBu * r.acres;
+      totalProd += prod;
+      if (!best || prod > best.prod) best = { state: r.state, prod };
     }
-    return { currentNat, priorNat, yoy, topState };
+    const topProducer = best && totalProd > 0
+      ? { state: best.state, share: (best.prod / totalProd) * 100 }
+      : null;
+    return { currentNat, priorNat, yoy, topProducer };
   }, [yieldReport]);
 
-  // ── Derived: this week's crop progress ────────────────────────────────────
+  // ── Derived: this week's crop progress (national) ─────────────────────────
   const progressView = useMemo(() => {
     if (progress.length === 0) return null;
     // Get the latest week
@@ -133,61 +172,46 @@ export default function CommodityDashboard({
     const latestWeek = weeks[weeks.length - 1];
     const latestRows = progress.filter(r => r.weekEnding === latestWeek);
 
-    // National average per stage (across all states reporting)
-    const byStage = new Map<string, { sum: number; n: number; userVal?: number }>();
-    const userStateName = (user?.state ?? '').toUpperCase().trim();
+    // National average per (class, stage). Wheat classes (Winter/Spring/Durum)
+    // are kept separate so we never average a winter-wheat stage against a
+    // spring-wheat one. Single-class crops (corn/soy) get class ''.
+    type Slot = { sum: number; n: number; cls: string; unit: string };
+    const byStage = new Map<string, Slot>();
     for (const r of latestRows) {
       const v = parseFloat(r.value);
       if (!isFinite(v)) continue;
-      const slot = byStage.get(r.unit) ?? { sum: 0, n: 0 };
+      const cls = cropClass(r.shortDesc);
+      const slot = byStage.get(`${cls}|${r.unit}`) ?? { sum: 0, n: 0, cls, unit: r.unit };
       slot.sum += v;
       slot.n += 1;
-      if (userStateName && r.state.toUpperCase() === userStateName) {
-        slot.userVal = v;
-      }
-      byStage.set(r.unit, slot);
+      byStage.set(`${cls}|${r.unit}`, slot);
     }
-    const stages = Array.from(byStage.entries()).map(([unit, s]) => ({
-      unit,
-      label: stageLabel(unit),
-      nationalAvg: s.n > 0 ? s.sum / s.n : 0,
-      userVal: s.userVal,
-    }));
-    return { latestWeek, stages, userState: userStateName };
-  }, [progress, user]);
+    const stages = Array.from(byStage.values())
+      .map(s => ({
+        cls: s.cls,
+        unit: s.unit,
+        label: stageLabel(s.unit),
+        nationalAvg: s.n > 0 ? s.sum / s.n : 0,
+      }))
+      // Drop stages that haven't started — a row of 0% bars just adds noise.
+      .filter(s => s.nationalAvg > 0)
+      .sort((a, b) =>
+        (CLASS_ORDER[a.cls] ?? 9) - (CLASS_ORDER[b.cls] ?? 9)
+        || stageRank(a.unit) - stageRank(b.unit));
 
-  // ── Derived: 5-year national yield series for the chart ───────────────────
-  const chartSeries = useMemo<Series[]>(() => {
-    if (history.length === 0) return [];
-    // Group all rows by year (ignoring class — usually only one for soybeans, mostly GRAIN for corn)
-    const byYear = new Map<number, { sum: number; n: number }>();
-    for (const r of history) {
-      const v = parseFloat(r.Value);
-      if (!isFinite(v) || r.year == null) continue;
-      const slot = byYear.get(r.year) ?? { sum: 0, n: 0 };
-      slot.sum += v; slot.n += 1;
-      byYear.set(r.year, slot);
-    }
-    const natlPoints = Array.from(byYear.entries())
-      .filter(([, s]) => s.n > 0)
-      .map(([year, s]) => ({ year, value: Math.round((s.sum / s.n) * 10) / 10 }))
-      .sort((a, b) => a.year - b.year);
-    const series: Series[] = [{ state: 'US AVG', color: colorFor(0), points: natlPoints }];
-
-    // Add user's state if data exists
-    const userState = (user?.state ?? '').toUpperCase().trim();
-    if (userState) {
-      const stateRows = history
-        .filter(r => r.state_name?.toUpperCase() === userState)
-        .map(r => ({ year: r.year ?? 0, value: parseFloat(r.Value) }))
-        .filter(r => isFinite(r.value) && r.year > 0)
-        .sort((a, b) => a.year - b.year);
-      if (stateRows.length > 0) {
-        series.push({ state: userState, color: colorFor(1), points: stateRows });
+    // Group by class so the repeated stage names read under a heading
+    // (e.g. "Winter Wheat") instead of a confusing flat list.
+    const groups: { cls: string; label: string; stages: typeof stages }[] = [];
+    for (const s of stages) {
+      let g = groups.find(grp => grp.cls === s.cls);
+      if (!g) {
+        g = { cls: s.cls, label: s.cls ? `${s.cls} ${commodityLabel}` : '', stages: [] };
+        groups.push(g);
       }
+      g.stages.push(s);
     }
-    return series;
-  }, [history, user]);
+    return { latestWeek, groups };
+  }, [progress, commodityLabel]);
 
   // ── Front contract for the price strip ────────────────────────────────────
   const frontPrice = prices?.contracts?.[0];
@@ -207,9 +231,15 @@ export default function CommodityDashboard({
           <span className={styles.heroIcon}>{commodityIcon}</span>
           {commodityLabel} Dashboard
         </h1>
-        <p>Everything for {commodityLabel.toLowerCase()} at a glance — price, USDA estimates, this week's progress, and 5-year trend.</p>
+        <p>
+          {crushProduct
+            ? `Futures and USDA WASDE supply & demand for ${commodityLabel.toLowerCase()}.`
+            : `Everything for ${commodityLabel.toLowerCase()} at a glance — price, USDA estimates, this week's progress, and 5-year trend.`}
+        </p>
       </div>
 
+      {/* ── Bento row: Futures + USDA Yield side by side ───────── */}
+      <div className={styles.bentoRow} style={crushProduct ? { gridTemplateColumns: '1fr' } : undefined}>
       {/* ── Price strip ────────────────────────────────────────── */}
       <div className={styles.section}>
         <div className={styles.sectionHead}>
@@ -228,6 +258,11 @@ export default function CommodityDashboard({
                   {fmtPrice(frontPrice.last)} <span className={styles.unitLabel}>{prices?.unit}</span>
                 </div>
                 <ChangePill change={frontPrice.change ?? null} pct={frontPrice.changePercent ?? null} />
+                {frontPrice.asOf && (
+                  <div style={{ fontFamily: 'Lato, sans-serif', fontSize: '.68rem', color: '#8aa06a', marginTop: '.3rem' }}>
+                    {fmtAsOf(frontPrice.asOf)} · ~10-min delayed
+                  </div>
+                )}
               </div>
               <div className={styles.deferredTable}>
                 {(prices?.contracts ?? []).slice(1).map(c => (
@@ -243,7 +278,8 @@ export default function CommodityDashboard({
         </div>
       </div>
 
-      {/* ── USDA Yield ─────────────────────────────────────────── */}
+      {/* ── USDA Yield (crops only) ────────────────────────────── */}
+      {!crushProduct && (
       <div className={styles.section}>
         <div className={styles.sectionHead}>
           <span>🏛️</span>
@@ -275,19 +311,29 @@ export default function CommodityDashboard({
                 : undefined}
             />
             <Stat
-              label="Top Yielding State"
-              value={yieldHeadline?.topState
-                ? `${yieldHeadline.topState.state}`
+              label="Largest Producer"
+              value={yieldHeadline?.topProducer
+                ? `${yieldHeadline.topProducer.state}`
                 : '—'}
-              footnote={yieldHeadline?.topState
-                ? `${fmtNum(yieldHeadline.topState.yield, 1)} bu/acre`
+              footnote={yieldHeadline?.topProducer
+                ? `~${yieldHeadline.topProducer.share.toFixed(0)}% of US production`
                 : undefined}
             />
           </div>
         )}
       </div>
+      )}
+      </div>{/* end bento row */}
 
-      {/* ── Crop Progress (this week) ──────────────────────────── */}
+      {/* ── Bento row 2: Supply/Demand + Crop Progress ─────────── */}
+      <div className={styles.bentoRow}>
+      {/* ── Supply & Demand (WASDE) ────────────────────────────── */}
+      <SupplyDemandBox commodity={commodity} commodityLabel={commodityLabel} />
+
+      {/* ── Right column: Crop Progress (crops) stacked over Managed Money ── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      {/* ── Crop Progress (this week, crops only) ──────────────── */}
+      {!crushProduct && (
       <div className={styles.section}>
         <div className={styles.sectionHead}>
           <span>🌱</span>
@@ -301,50 +347,40 @@ export default function CommodityDashboard({
         ) : (
           <>
             <p className={styles.progressMeta}>
-              Week ending <strong>{fmtWeek(progressView.latestWeek)}</strong>
-              {progressView.userState && (
-                <> · showing <strong>{progressView.userState}</strong> next to national avg</>
-              )}
+              National · week ending <strong>{fmtWeek(progressView.latestWeek)}</strong>
             </p>
-            <div className={styles.stageGrid}>
-              {progressView.stages.map(s => (
-                <StageBar
-                  key={s.unit}
-                  label={s.label}
-                  nationalAvg={s.nationalAvg}
-                  userVal={s.userVal}
-                />
-              ))}
-            </div>
+            {progressView.groups.map(g => (
+              <div key={g.cls || 'single'} style={{ marginBottom: '.85rem' }}>
+                {g.label && (
+                  <div style={{
+                    fontFamily: 'Lato, sans-serif', fontSize: '.72rem', fontWeight: 700,
+                    color: '#3d6b2a', textTransform: 'uppercase', letterSpacing: '.05em',
+                    margin: '0 0 .4rem',
+                  }}>
+                    {g.label}
+                  </div>
+                )}
+                <div className={styles.stageGrid}>
+                  {g.stages.map(s => (
+                    <StageBar
+                      key={`${g.cls}|${s.unit}`}
+                      label={s.label}
+                      nationalAvg={s.nationalAvg}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
           </>
         )}
       </div>
-
-      {/* ── 5-year history chart ───────────────────────────────── */}
-      <div className={styles.section}>
-        <div className={styles.sectionHead}>
-          <span>📊</span>
-          <h2>5-Year Yield History</h2>
-          <Link href="/usda" className={styles.headLink}>State-level history →</Link>
-        </div>
-        {chartSeries.length === 0 ? (
-          <p className={styles.empty}>No history available.</p>
-        ) : (
-          <>
-            <div className={styles.legend}>
-              {chartSeries.map(s => (
-                <span key={s.state} className={styles.legendItem}>
-                  <span className={styles.legendSwatch} style={{ background: s.color }} />
-                  <strong>{s.state}</strong>
-                </span>
-              ))}
-            </div>
-            <YieldHistoryChart series={chartSeries} yLabel="Yield (bu/acre)" />
-          </>
-        )}
+      )}
+      <CotPanel commodity={commodity} commodityLabel={commodityLabel} />
       </div>
+      </div>{/* end bento row 2 */}
 
-      {/* ── Quick links ────────────────────────────────────────── */}
+      {/* ── Quick links (crops only) ───────────────────────────── */}
+      {!crushProduct && (
       <div className={styles.linkGrid}>
         <QuickLink href="/usda-reports" icon="🏛️" title="USDA Reports"
           desc="Adjust state-by-state yields, submit a guess, see the crowd average." />
@@ -355,6 +391,7 @@ export default function CommodityDashboard({
         <QuickLink href="/forecast-change" icon="📈" title="Forecast Change"
           desc="Track how weather forecasts shift between refreshes." />
       </div>
+      )}
     </div>
   );
 }

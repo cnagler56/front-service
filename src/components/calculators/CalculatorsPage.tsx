@@ -4,7 +4,6 @@ import styles from '@/src/styles/farm.module.css';
 import SeedPopulationCalc from './SeedPopulationCalc';
 import SprayerGpaCalc from './SprayerGpaCalc';
 import GrainShrinkCalc from './GrainShrinkCalc';
-import CashRentCalc from './CashRentCalc';
 import LoanCalc from './LoanCalc';
 
 /**
@@ -23,7 +22,7 @@ export default function CalculatorsPage() {
         <div className={styles.sectionBody}>
           <p style={{ fontFamily: 'Lato, sans-serif', fontSize: '.85rem', color: '#666', margin: 0 }}>
             Quick math you reach for through the season — seed populations, sprayer rates,
-            grain shrink, breakeven rent, and loan payments. All results update as you type.
+            grain shrink, and loan payments. All results update as you type.
           </p>
         </div>
       </div>
@@ -31,7 +30,6 @@ export default function CalculatorsPage() {
       <SeedPopulationCalc />
       <SprayerGpaCalc />
       <GrainShrinkCalc />
-      <CashRentCalc />
       <LoanCalc />
     </div>
   );

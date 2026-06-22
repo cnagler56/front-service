@@ -12,7 +12,8 @@ export default function CattlePage() {
         commodityIcon="🐄"
         pricesGroupName="Live Cattle"
         defaultMonth="1"   // Jan 1 — annual Cattle Inventory
-        inventoryDescription="Live Cattle futures, NASS Cattle Inventory snapshot, and top producing states. Drill into the full report from the link above."
+        inventoryDescription="Live + Feeder Cattle futures, CFTC positioning, monthly Cattle on Feed, and the NASS inventory snapshot."
+        extraPricesGroupName="Feeder Cattle"
       />
     </div>
   );

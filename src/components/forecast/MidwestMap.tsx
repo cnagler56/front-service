@@ -22,6 +22,54 @@ function project(lat: number, lon: number): { x: number; y: number } {
   };
 }
 
+/* ── US Drought Monitor layer ─────────────────────────────────────
+   Current-week drought polygons from the USDM ArcGIS FeatureServer,
+   clipped to our map envelope and generalized (maxAllowableOffset) to
+   keep the payload light. Field `DM` is the category 0–4 = D0–D4. */
+const DROUGHT_QUERY =
+  'https://services5.arcgis.com/0OTVzJS4K09zlixn/arcgis/rest/services/USDM_current/FeatureServer/0/query' +
+  '?where=1%3D1&outFields=DM%2CMapDate&returnGeometry=true&outSR=4326&inSR=4326' +
+  '&geometryType=esriGeometryEnvelope' +
+  `&geometry=${BOUNDS.lonMin}%2C${BOUNDS.latMin}%2C${BOUNDS.lonMax}%2C${BOUNDS.latMax}` +
+  '&spatialRel=esriSpatialRelIntersects&maxAllowableOffset=0.02&f=geojson';
+
+/** Official USDM category colors + labels, indexed by DM (0–4). */
+const DM_COLORS = ['#ffff00', '#fcd37f', '#ffaa00', '#e60000', '#730000'];
+const DM_LABELS = ['D0 Abnormally Dry', 'D1 Moderate', 'D2 Severe', 'D3 Extreme', 'D4 Exceptional'];
+function dmColor(dm: number): string { return DM_COLORS[dm] ?? '#ffff00'; }
+
+interface DroughtPoly { dm: number; geometry: GeoFeature['geometry']; }
+
+/* ── Point-in-polygon (so a marker can report its drought category) ──
+   Standard ray-casting on [lon, lat] rings. USDM polygons are cumulative
+   (a D3 area also lies inside the D0–D2 polygons), so we take the worst
+   category whose polygon contains the point. */
+function pointInRing(x: number, y: number, ring: number[][]): boolean {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0], yi = ring[i][1], xj = ring[j][0], yj = ring[j][1];
+    if (((yi > y) !== (yj > y)) && (x < ((xj - xi) * (y - yi)) / (yj - yi) + xi)) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+function pointInPolygon(x: number, y: number, poly: number[][][]): boolean {
+  if (poly.length === 0 || !pointInRing(x, y, poly[0])) return false;
+  for (let k = 1; k < poly.length; k++) if (pointInRing(x, y, poly[k])) return false; // hole
+  return true;
+}
+function geomContains(x: number, y: number, g: GeoFeature['geometry']): boolean {
+  return g.type === 'Polygon'
+    ? pointInPolygon(x, y, g.coordinates)
+    : g.coordinates.some(p => pointInPolygon(x, y, p));
+}
+function droughtCategoryAt(lon: number, lat: number, polys: DroughtPoly[]): number | null {
+  let worst = -1;
+  for (const p of polys) if (geomContains(lon, lat, p.geometry)) worst = Math.max(worst, p.dm);
+  return worst >= 0 ? worst : null;
+}
+
 /** States rendered in our map view. */
 const MIDWEST_STATES = new Set([
   'Minnesota', 'Wisconsin', 'Michigan',
@@ -113,11 +161,13 @@ function avgPrecipDelta(curr: ForecastSnapshot | null, prev: ForecastSnapshot | 
 /* ── Marker color from a delta ────────────────────────────────── */
 
 const NO_DATA_COLOR = '#9ca3af';     // grey for "no previous snapshot"
-const NEUTRAL: [number, number, number] = [204, 204, 204];
-const WARM:    [number, number, number] = [185, 28, 28];   // #b91c1c
-const COOL:    [number, number, number] = [29, 78, 216];   // #1d4ed8
-const WET:     [number, number, number] = [30, 110, 210];
-const DRY:     [number, number, number] = [161, 98, 7];    // #a16207
+// Pure light→strong ramps (no grey midpoint, so even small deltas read as a
+// clean light blue / light red instead of muddy bluish-grey or brown).
+const BLUE_LIGHT:  [number, number, number] = [191, 219, 254]; // #bfdbfe
+const BLUE_STRONG: [number, number, number] = [ 29,  78, 216]; // #1d4ed8
+const RED_LIGHT:   [number, number, number] = [254, 202, 202]; // #fecaca
+const RED_STRONG:  [number, number, number] = [220,  38,  38]; // #dc2626
+const ZERO_COLOR = '#d1d5db'; // no-change dots render hollow, so this is rarely seen
 
 function lerp(a: number, b: number, t: number): number {
   return Math.round(a + (b - a) * t);
@@ -135,9 +185,9 @@ function markerTempColor(delta: number | null): string {
   if (delta == null) return NO_DATA_COLOR;
   const cap = 5;
   const mag = Math.min(Math.abs(delta), cap) / cap;
-  if (delta > 0) return lerpColor(NEUTRAL, WARM, mag);
-  if (delta < 0) return lerpColor(NEUTRAL, COOL, mag);
-  return lerpColor(NEUTRAL, NEUTRAL, 0);
+  if (delta > 0) return lerpColor(RED_LIGHT, RED_STRONG, mag);   // warmer
+  if (delta < 0) return lerpColor(BLUE_LIGHT, BLUE_STRONG, mag); // cooler
+  return ZERO_COLOR;
 }
 
 /** Precip marker color — caps at ±20 percentage points. */
@@ -145,9 +195,37 @@ function markerPrecipColor(delta: number | null): string {
   if (delta == null) return NO_DATA_COLOR;
   const cap = 20;
   const mag = Math.min(Math.abs(delta), cap) / cap;
-  if (delta > 0) return lerpColor(NEUTRAL, WET, mag);
-  if (delta < 0) return lerpColor(NEUTRAL, DRY, mag);
-  return lerpColor(NEUTRAL, NEUTRAL, 0);
+  if (delta > 0) return lerpColor(BLUE_LIGHT, BLUE_STRONG, mag); // wetter
+  if (delta < 0) return lerpColor(RED_LIGHT, RED_STRONG, mag);   // drier
+  return ZERO_COLOR;
+}
+
+/* ── Marker appearance ────────────────────────────────────────────
+   Only a real change gets a solid, colored, shadowed dot. Everything
+   else is hollow so changes are the only thing that "pops":
+     • no previous snapshot (delta null) → dashed faint ring
+     • change below the threshold         → thin solid ring
+   Thresholds are small so genuine shifts still register. */
+const TEMP_EPS   = 0.5;   // °F (averaged hi+lo delta)
+const PRECIP_EPS = 1.5;   // percentage points
+
+interface MarkerVisual {
+  fill: string; stroke: string; strokeWidth: number;
+  dash?: string; shadow: boolean; r: number;
+}
+
+function markerVisual(delta: number | null, metric: Metric): MarkerVisual {
+  if (delta == null) {
+    // No baseline to compare against yet (new location / first snapshot only).
+    return { fill: 'transparent', stroke: '#b8bdab', strokeWidth: 1.5, dash: '2 2', shadow: false, r: 6 };
+  }
+  const eps = metric === 'TEMP' ? TEMP_EPS : PRECIP_EPS;
+  if (Math.abs(delta) < eps) {
+    // Tracked, but essentially no change since the last snapshot.
+    return { fill: 'transparent', stroke: '#a7ad97', strokeWidth: 1.5, shadow: false, r: 6 };
+  }
+  const fill = metric === 'TEMP' ? markerTempColor(delta) : markerPrecipColor(delta);
+  return { fill, stroke: '#fff', strokeWidth: 2, shadow: true, r: 8 };
 }
 
 /* ── Tooltip helpers ──────────────────────────────────────────── */
@@ -208,6 +286,14 @@ function fmtTs(iso: string | null | undefined): string {
   return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
 
+/** "▲10" / "▼5" / "±0" — how much this value moved since the previous snapshot. */
+function fmtDelta(d: number | null): string {
+  if (d == null) return '—';
+  const r = Math.round(d);
+  if (r === 0) return '±0';
+  return `${r > 0 ? '▲' : '▼'}${Math.abs(r)}`;
+}
+
 /* ── Component ────────────────────────────────────────────────── */
 
 interface Props {
@@ -220,6 +306,11 @@ export default function MidwestMap({ locations }: Props) {
   const [hoverId, setHoverId] = useState<number | null>(null);
   const [hoverXY, setHoverXY] = useState<{ x: number; y: number } | null>(null);
   const [metric, setMetric]   = useState<Metric>('TEMP');
+
+  // US Drought Monitor background layer
+  const [drought, setDrought]       = useState<DroughtPoly[]>([]);
+  const [droughtDate, setDroughtDate] = useState<Date | null>(null);
+  const [showDrought, setShowDrought] = useState(true);
 
   /**
    * Per-location delta the markers are colored by. Computed once per
@@ -240,8 +331,6 @@ export default function MidwestMap({ locations }: Props) {
     return out;
   }, [locations, metric]);
 
-  const colorFor = metric === 'TEMP' ? markerTempColor : markerPrecipColor;
-
   // Load state outlines once
   useEffect(() => {
     let cancelled = false;
@@ -257,6 +346,26 @@ export default function MidwestMap({ locations }: Props) {
     return () => { cancelled = true; };
   }, []);
 
+  // Load current US Drought Monitor polygons once
+  useEffect(() => {
+    let cancelled = false;
+    fetch(DROUGHT_QUERY)
+      .then(r => r.json())
+      .then((geo: { features?: { properties?: { DM?: number; MapDate?: number }; geometry?: GeoFeature['geometry'] }[] }) => {
+        if (cancelled) return;
+        const polys: DroughtPoly[] = (geo.features ?? [])
+          .filter(f => f.geometry)
+          .map(f => ({ dm: f.properties?.DM ?? 0, geometry: f.geometry as GeoFeature['geometry'] }))
+          // draw worse categories last so they sit on top of milder ones
+          .sort((a, b) => a.dm - b.dm);
+        setDrought(polys);
+        const md = geo.features?.find(f => f.properties?.MapDate)?.properties?.MapDate;
+        if (md) setDroughtDate(new Date(md));
+      })
+      .catch(() => { /* drought layer is optional — fail quietly */ });
+    return () => { cancelled = true; };
+  }, []);
+
   const hoverLoc = useMemo(
     () => locations.find(l => l.id === hoverId) ?? null,
     [hoverId, locations],
@@ -269,6 +378,12 @@ export default function MidwestMap({ locations }: Props) {
       parseSnap(hoverLoc.previousSnapshotJson),
     );
   }, [hoverLoc]);
+
+  // Drought category at the hovered location (null = not in drought)
+  const hoverDm = useMemo(() => {
+    if (!hoverLoc || hoverLoc.lat == null || hoverLoc.lon == null || drought.length === 0) return null;
+    return droughtCategoryAt(hoverLoc.lon, hoverLoc.lat, drought);
+  }, [hoverLoc, drought]);
 
   return (
     <div className={styles.mapWrap}>
@@ -290,9 +405,20 @@ export default function MidwestMap({ locations }: Props) {
           >
             💧 Precipitation
           </button>
+          <button
+            type="button"
+            onClick={() => setShowDrought(s => !s)}
+            className={`${farmStyles.filterPill} ${showDrought ? farmStyles.filterPillActive : ''}`}
+            title="Toggle the current US Drought Monitor layer"
+          >
+            🏜️ Drought {showDrought ? 'on' : 'off'}
+          </button>
         </div>
         <Legend metric={metric} />
       </div>
+
+      {/* Drought legend + release date */}
+      {showDrought && drought.length > 0 && <DroughtLegend asOf={droughtDate} />}
 
       {error && <p className={styles.error}>{error}</p>}
 
@@ -301,7 +427,7 @@ export default function MidwestMap({ locations }: Props) {
         className={styles.mapSvg}
         onMouseLeave={() => { setHoverId(null); setHoverXY(null); }}
       >
-        {/* States */}
+        {/* States (base fill) */}
         <g>
           {stateFeatures.map(f => (
             <path
@@ -311,6 +437,34 @@ export default function MidwestMap({ locations }: Props) {
             />
           ))}
         </g>
+
+        {/* US Drought Monitor layer — sits over the state fill, under markers */}
+        {showDrought && (
+          <g style={{ pointerEvents: 'none' }}>
+            {drought.map((d, i) => (
+              <path
+                key={`dm-${i}`}
+                d={geometryToPath(d.geometry)}
+                fill={dmColor(d.dm)}
+                fillOpacity={0.5}
+                fillRule="evenodd"
+              />
+            ))}
+          </g>
+        )}
+
+        {/* Re-draw crisp state borders on top of the drought fill */}
+        {showDrought && drought.length > 0 && (
+          <g style={{ pointerEvents: 'none' }}>
+            {stateFeatures.map(f => (
+              <path
+                key={`border-${f.properties.name}`}
+                d={geometryToPath(f.geometry)}
+                className={styles.stateBorder}
+              />
+            ))}
+          </g>
+        )}
 
         {/* State labels */}
         <g>
@@ -336,14 +490,20 @@ export default function MidwestMap({ locations }: Props) {
             const { x, y } = project(loc.lat, loc.lon);
             const isHover = hoverId === loc.id;
             const delta = loc.id != null ? deltas.get(loc.id) ?? null : null;
-            const fill = colorFor(delta);
+            const v = markerVisual(delta, metric);
             return (
               <g key={loc.id}>
                 <circle
                   cx={x} cy={y}
-                  r={isHover ? 11 : 8}
-                  style={{ fill }}
-                  className={`${styles.marker} ${isHover ? styles.markerHover : ''}`}
+                  r={isHover ? v.r + 3 : v.r}
+                  style={{
+                    fill: v.fill,
+                    stroke: isHover ? '#1a2e0f' : v.stroke,
+                    strokeWidth: isHover ? v.strokeWidth + 0.6 : v.strokeWidth,
+                    strokeDasharray: v.dash,
+                    filter: v.shadow ? undefined : 'none',
+                  }}
+                  className={styles.marker}
                   onMouseEnter={(e) => {
                     setHoverId(loc.id ?? null);
                     setHoverXY({ x: e.clientX, y: e.clientY });
@@ -359,6 +519,8 @@ export default function MidwestMap({ locations }: Props) {
         </g>
       </svg>
 
+      <MarkerKey metric={metric} />
+
       {/* Hover tooltip — positioned in viewport coords */}
       {hoverLoc && hoverXY && (
         <div
@@ -373,6 +535,25 @@ export default function MidwestMap({ locations }: Props) {
           <p className={styles.tooltipMeta}>
             Updated <strong>{fmtTs(hoverLoc.currentFetchedAt)}</strong>
           </p>
+
+          {drought.length > 0 && (
+            <p className={styles.tooltipDrought}>
+              {hoverDm == null ? (
+                <>🌧️ Not in drought</>
+              ) : (
+                <>
+                  <span
+                    style={{
+                      width: 11, height: 11, borderRadius: 2, display: 'inline-block',
+                      background: dmColor(hoverDm), border: '1px solid #cbb', marginRight: 5,
+                      verticalAlign: 'middle',
+                    }}
+                  />
+                  Drought: <strong>{DM_LABELS[hoverDm]}</strong>
+                </>
+              )}
+            </p>
+          )}
 
           {hoverDeltas.length === 0 ? (
             <p className={styles.tooltipEmpty}>No forecast snapshot yet.</p>
@@ -391,22 +572,91 @@ export default function MidwestMap({ locations }: Props) {
                   <tr key={d.day}>
                     <td className={styles.tooltipDay}>{d.day}</td>
                     <td style={{ background: tempColor(d.highDelta) }}>
-                      {d.high != null ? `${Math.round(d.high)}°` : '—'}
+                      <span className={styles.cellVal}>{d.high != null ? `${Math.round(d.high)}°` : '—'}</span>
+                      <span className={styles.deltaTag}>{fmtDelta(d.highDelta)}</span>
                     </td>
                     <td style={{ background: tempColor(d.lowDelta) }}>
-                      {d.low != null ? `${Math.round(d.low)}°` : '—'}
+                      <span className={styles.cellVal}>{d.low != null ? `${Math.round(d.low)}°` : '—'}</span>
+                      <span className={styles.deltaTag}>{fmtDelta(d.lowDelta)}</span>
                     </td>
                     <td style={{ background: precipColor(d.precipDelta) }}>
-                      {d.precip != null ? `${d.precip}%` : '—'}
+                      <span className={styles.cellVal}>{d.precip != null ? `${d.precip}%` : '—'}</span>
+                      <span className={styles.deltaTag}>{fmtDelta(d.precipDelta)}</span>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           )}
+          {hoverDeltas.length > 0 && (
+            <p className={styles.tooltipFoot}>▲ / ▼ = change since previous snapshot</p>
+          )}
         </div>
       )}
     </div>
+  );
+}
+
+/** US Drought Monitor legend (D0–D4) + the week the data is valid for. */
+function DroughtLegend({ asOf }: { asOf: Date | null }) {
+  return (
+    <div style={{
+      display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '.6rem',
+      padding: '.1rem .25rem .6rem', fontFamily: 'Lato, sans-serif',
+      fontSize: '.7rem', color: '#6a7a55',
+    }}>
+      <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em' }}>
+        Drought
+      </span>
+      {DM_COLORS.map((c, i) => (
+        <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '.3rem' }}>
+          <span style={{ width: 13, height: 13, background: c, border: '1px solid #cbb', borderRadius: 2, display: 'inline-block' }} />
+          {DM_LABELS[i]}
+        </span>
+      ))}
+      <a
+        href="https://droughtmonitor.unl.edu/CurrentMap/StateDroughtMonitor.aspx?USA"
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{ marginLeft: 'auto', color: '#3d6b2a', fontWeight: 700 }}
+      >
+        {asOf
+          ? `USDM · valid ${asOf.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} →`
+          : 'US Drought Monitor →'}
+      </a>
+    </div>
+  );
+}
+
+/** Tiny key explaining solid vs hollow vs dashed markers. */
+function MarkerKey({ metric }: { metric: Metric }) {
+  // A representative "change" color for the chosen metric.
+  const changeColor = metric === 'TEMP' ? markerTempColor(4) : markerPrecipColor(15);
+  return (
+    <div style={{
+      display: 'flex', flexWrap: 'wrap', gap: '1.1rem', alignItems: 'center',
+      padding: '.55rem .25rem 0', fontFamily: 'Lato, sans-serif',
+      fontSize: '.72rem', color: '#6a7a55',
+    }}>
+      <Swatch fill={changeColor} stroke="#fff" strokeWidth={2} label="Change (shaded by amount)" />
+      <Swatch fill="transparent" stroke="#a7ad97" strokeWidth={1.5} label="No change" />
+      <Swatch fill="transparent" stroke="#b8bdab" strokeWidth={1.5} dash="2 2" label="Awaiting first comparison" />
+    </div>
+  );
+}
+
+function Swatch({
+  fill, stroke, strokeWidth, dash, label,
+}: {
+  fill: string; stroke: string; strokeWidth: number; dash?: string; label: string;
+}) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '.4rem' }}>
+      <svg width="16" height="16" viewBox="0 0 16 16">
+        <circle cx="8" cy="8" r="6" fill={fill} stroke={stroke} strokeWidth={strokeWidth} strokeDasharray={dash} />
+      </svg>
+      {label}
+    </span>
   );
 }
 

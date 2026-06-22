@@ -70,6 +70,14 @@
   fill: #e1efc9;
 }
 
+/* Border-only overlay redrawn on top of the drought layer */
+.stateBorder {
+  fill: none;
+  stroke: #6a7a55;
+  stroke-width: 0.7;
+  pointer-events: none;
+}
+
 /* State name labels */
 .stateLabel {
   font-family: 'Lato', sans-serif;
@@ -114,9 +122,14 @@
   color: #2c4a1e;
 }
 .tooltipMeta {
-  margin: 0 0 .55rem;
+  margin: 0 0 .35rem;
   font-size: .72rem;
   color: #6a7a55;
+}
+.tooltipDrought {
+  margin: 0 0 .55rem;
+  font-size: .74rem;
+  color: #5a4a2a;
 }
 .tooltipEmpty {
   margin: 0;
@@ -155,6 +168,27 @@
 .tooltipTable tr:last-child td { border-bottom: none; }
 
 .tooltipDay { font-weight: 700; }
+
+/* Each numeric cell stacks the value over its change-since-last-snapshot. */
+.cellVal {
+  display: block;
+  line-height: 1.1;
+}
+.deltaTag {
+  display: block;
+  font-size: .6rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #44503a;
+  opacity: .85;
+}
+
+.tooltipFoot {
+  margin: .45rem 0 0;
+  font-size: .62rem;
+  color: #8a9678;
+  text-align: right;
+}
 
 .error {
   color: #b91c1c;

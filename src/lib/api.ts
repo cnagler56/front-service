@@ -11,6 +11,7 @@ export interface User {
   state: string;
   interest: string;
   active: boolean;
+  roles?: 'USER' | 'ADMIN';
 }
 
 export interface Post {
@@ -85,6 +86,20 @@ export interface AnimalData {
   Value: string;
 }
 
+/** National headline for Cattle on Feed (monthly) or Hogs & Pigs (quarterly). */
+export interface LivestockReport {
+  report: string;          // "Cattle on Feed" / "Hogs & Pigs"
+  unit?: string;           // "head"
+  period?: string;         // NASS reference period, e.g. "FIRST OF APR"
+  year?: number;
+  value?: number;          // Cattle on Feed total
+  all?: number;            // Hogs total
+  breeding?: number;
+  market?: number;
+  yoyPct?: number;
+  message?: string;
+}
+
 export interface CommodityPrice {
   symbol: string;          // e.g. "ZCN26.CBT"
   name: string;            // e.g. "Corn"
@@ -127,30 +142,6 @@ export interface CropProgressData {
   shortDesc?: string;
 }
 
-export type FieldCrop = 'CORN' | 'SOYBEANS' | 'WHEAT' | 'HAY' | 'PASTURE' | 'OTHER';
-
-export const FIELD_CROPS: { value: FieldCrop; label: string; icon: string }[] = [
-  { value: 'CORN',     label: 'Corn',     icon: '🌽' },
-  { value: 'SOYBEANS', label: 'Soybeans', icon: '🫘' },
-  { value: 'WHEAT',    label: 'Wheat',    icon: '🌾' },
-  { value: 'HAY',      label: 'Hay',      icon: '🌿' },
-  { value: 'PASTURE',  label: 'Pasture',  icon: '🐄' },
-  { value: 'OTHER',    label: 'Other',    icon: '📦' },
-];
-
-export interface FieldRecord {
-  id?: number;
-  userId: number;
-  name: string;
-  acres?: number | null;
-  crop?: FieldCrop | null;
-  variety?: string | null;
-  plantedOn?: string | null;  // YYYY-MM-DD
-  lat?: number | null;
-  lon?: number | null;
-  notes?: string | null;
-  createdAt?: string;
-}
 
 export interface YieldSnapshot {
   id?: number;
@@ -177,12 +168,92 @@ export interface UsdaYieldReport {
 export interface YieldGuess {
   id?: number;
   commodity: string;
+  year?: number;
   estimate: number;
   name: string;
   state: string;
   interest: string;
-  userId: number;
+  userId?: number;    // optional on submit — the server stamps it from the session
   date?: string;
+  note?: string;      // explanation attached to a revision
+}
+
+/** One person's current standing in the challenge, with how it changed since last time. */
+export interface GuessRosterEntry {
+  latestId: number;
+  userId: number | null;
+  name: string;
+  state: string;
+  interest: string;
+  estimate: number;
+  date?: string;
+  revisions: number;
+  updated: boolean;                              // made more than one guess
+  direction: 'up' | 'down' | 'same' | null;     // null = first guess
+  delta: number | null;                          // latest − previous
+  previousEstimate: number | null;
+  note: string | null;                           // explanation on the latest revision
+}
+
+export interface SupplyDemandRow {
+  attribute: string;
+  unit: string;                // WASDE units, e.g. "Million Bushels"
+  seq: number;                 // file/display order
+  values: (number | null)[];   // aligned to `years`
+  prev?: number | null;        // prior-month value for the new-crop year (values[0])
+}
+export interface SupplyDemandSheet {
+  commodity: string;
+  years: number[];             // newest first, e.g. [2026, 2025, 2024]
+  reportDate?: string;         // WASDE report date
+  prevReportDate?: string;     // prior month's report, for the change comparison
+  updatedAt?: string;
+  us: SupplyDemandRow[];
+  world: SupplyDemandRow[];
+  message?: string;
+}
+
+export interface Feedback {
+  id?: number;
+  userId?: number | null;
+  name?: string;
+  email?: string;
+  message: string;
+  date?: string;
+}
+
+export interface ResultsRankRow {
+  label: string;        // group name or state
+  count: number;
+  avgEstimate: number;
+  avgError: number;
+}
+
+export interface ResultsIndividual {
+  name: string;
+  state: string;
+  group: string;
+  estimate: number;
+  error: number;
+}
+
+export interface ResultsPeriod {
+  period: string;          // "AUG", "SEP", "YEAR", …
+  usdaYield: number;
+}
+
+export interface UsdaResults {
+  commodity: string;
+  year: number;
+  usdaYield: number | null;
+  period: string;          // which report is being scored
+  cutoff: string | null;   // NASS publication timestamp (the cheat-proof gate)
+  availablePeriods: ResultsPeriod[];
+  participants: number;
+  byGroup: ResultsRankRow[];
+  byState: ResultsRankRow[];
+  topIndividuals: ResultsIndividual[];
+  message?: string;
 }
 
 export interface PlantingSnapshot {
@@ -241,20 +312,76 @@ export interface SoilMoistureRow {
   GWETPROF: number | null;
 }
 
-export interface GddRow {
-  date: string;
-  T2M_MAX: number | null;
-  T2M_MIN: number | null;
-  gdd: number | null;
+/** One 3-month ONI season, e.g. { season: "MAM", year: 2026, oni: 0.48 }. */
+export interface EnsoSeason {
+  season: string;        // 3-month code, e.g. "MAM"
+  year: number;
+  oni: number;           // Oceanic Niño Index (°C anomaly)
+}
+export interface EnsoCurrent extends EnsoSeason {
+  phase: 'EL_NINO' | 'LA_NINA' | 'NEUTRAL';
+  label: string;         // "El Niño" / "La Niña" / "Neutral"
+  strength: string;      // "Weak" | "Moderate" | "Strong" | "Very Strong" | ""
+}
+/** One season of the admin-entered probabilistic outlook. */
+export interface EnsoForecastRow {
+  id?: number;
+  season: string;        // "JJA 2026"
+  elNino: number;        // probability %
+  neutral: number;
+  laNina: number;
+  issued?: string | null;
+}
+export interface EnsoData {
+  source: string;
+  updatedAt?: string;
+  current: EnsoCurrent | null;
+  history: EnsoSeason[];  // chronological, ~6 years
+  forecast?: EnsoForecastRow[];
+  forecastIssued?: string | null;
+  message?: string;
 }
 
-export interface GddResponse {
-  totalGdd: number;
-  days: number;
-  plantedOn: string;
-  base: number;
-  cap: number;
-  rows: GddRow[];
+/** Latest CFTC managed-money positioning for one commodity (empty if untracked). */
+export interface CotPosition {
+  reportDate?: string | null;
+  longs?: number;
+  shorts?: number;
+  net?: number;        // longs − shorts
+  netChange?: number;  // week-over-week change in net
+}
+
+/** One auto-generated home-page news item (last 3 days). */
+export interface NewsItem {
+  category: string;       // "ETHANOL" / "WASDE" / "ENSO" / "PRICE"
+  icon: string;
+  headline: string;
+  detail?: string | null;
+  link?: string | null;
+  eventDate?: string | null;
+  createdAt?: string;
+}
+
+/** One weekly EIA observation. */
+export interface EthanolPoint {
+  period: string;        // ISO week-ending date "2026-06-12"
+  value: number;
+}
+export interface EthanolData {
+  source: string;
+  updatedAt?: string;
+  productionUnit?: string;        // "MBBL/D"
+  stocksUnit?: string;            // "MBBL"
+  production?: EthanolPoint[];     // chronological, ~52 weeks
+  stocks?: EthanolPoint[];
+  productionLatest?: number | null;
+  productionWoW?: number | null;
+  productionAsOf?: string | null;
+  stocksLatest?: number | null;
+  stocksAsOf?: string | null;
+  impliedCornBuPerWeek?: number;  // derived corn grind
+  impliedCornBuPerYear?: number;
+  message?: string;
 }
 
 /**
@@ -366,7 +493,15 @@ export const api = {
     get<UsdaPlantingReport>(`/api/usda-reports/planting/${commodity}`),
 
   getYieldGuesses: (commodity: string) =>
-    get<YieldGuess[]>(`/api/yield-guess/${commodity}`),
+    get<GuessRosterEntry[]>(`/api/yield-guess/${commodity}`),
+
+  getGuessHistory: (commodity: string, userId: number) =>
+    get<YieldGuess[]>(`/api/yield-guess/${commodity}/history/${userId}`),
+
+  getUsdaResults: (commodity: string, period?: string) =>
+    get<UsdaResults>(
+      `/api/usda-results/${commodity}${period ? `?period=${encodeURIComponent(period)}` : ''}`,
+    ),
   submitYieldGuess: async (body: YieldGuess): Promise<YieldGuess> => {
     const res = await fetch(`${BASE}/api/yield-guess`, {
       method: 'POST', credentials: 'include',
@@ -377,6 +512,19 @@ export const api = {
     return res.json();
   },
 
+  submitFeedback: async (body: { name?: string; email?: string; message: string }): Promise<Feedback> => {
+    const res = await fetch(`${BASE}/api/feedback`, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    return res.json();
+  },
+
+  // Admin-only feedback inbox
+  getFeedback: () => get<Feedback[]>(`/api/feedback`),
+
   getWeather: (gridID: string, gridX: string, gridY: string) =>
     get<WeatherPeriod[]>(`/fetch-weather?gridID=${gridID}&gridX=${gridX}&gridY=${gridY}`),
 
@@ -385,6 +533,9 @@ export const api = {
 
   getCattle: (month: string, year: string) =>
     get<AnimalData[]>(`/api/cattle?month=${month}&year=${year}`),
+
+  getCattleOnFeed: () => get<LivestockReport>('/api/cattle-on-feed'),
+  getHogsAndPigs: () => get<LivestockReport>('/api/hogs-pigs'),
 
   getNassYield: (grain: string, month: string, year: string) =>
     get<NASSYieldData[]>(`/api/nass-yield-data?grain=${grain}&month=${month}&year=${year}`),
@@ -397,22 +548,18 @@ export const api = {
       `/api/crop-progress?grain=${grain}${year != null ? `&year=${year}` : ''}`,
     ),
 
-  getSoilMoisture: (lat: number, lon: number, days = 14) =>
-    get<SoilMoistureRow[]>(
-      `/api/soil-moisture?lat=${lat}&lon=${lon}&days=${days}`,
-    ),
+  getEnso: () => get<EnsoData>('/api/enso'),
 
-  getGdd: (lat: number, lon: number, plantedOn: string, base = 50, cap = 86) =>
-    get<GddResponse>(
-      `/api/gdd?lat=${lat}&lon=${lon}&plantedOn=${plantedOn}&base=${base}&cap=${cap}`,
-    ),
+  getEthanol: () => get<EthanolData>('/api/ethanol'),
 
-  // ── Fields ──────────────────────────────────────────────────────
-  listFields: (userId: number) =>
-    get<FieldRecord[]>(`/api/fields/${userId}`),
+  getNews: () => get<NewsItem[]>('/api/news'),
 
-  createField: async (body: FieldRecord): Promise<FieldRecord> => {
-    const res = await fetch(`${BASE}/api/fields`, {
+  getCot: (commodity: string) => get<CotPosition>(`/api/cot/${commodity}`),
+
+  saveEnsoForecast: async (
+    body: { issued: string; rows: Omit<EnsoForecastRow, 'id' | 'issued'>[] },
+  ): Promise<EnsoForecastRow[]> => {
+    const res = await fetch(`${BASE}/api/enso/forecast`, {
       method: 'POST', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -421,20 +568,10 @@ export const api = {
     return res.json();
   },
 
-  updateField: async (id: number, body: FieldRecord): Promise<FieldRecord> => {
-    const res = await fetch(`${BASE}/api/fields/${id}`, {
-      method: 'PUT', credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-    return res.json();
-  },
-
-  deleteField: async (id: number): Promise<void> => {
-    const res = await fetch(`${BASE}/api/fields/${id}`, { method: 'DELETE', credentials: 'include' });
-    if (!res.ok && res.status !== 204) throw new Error(`${res.status} ${res.statusText}`);
-  },
+  getSoilMoisture: (lat: number, lon: number, days = 14) =>
+    get<SoilMoistureRow[]>(
+      `/api/soil-moisture?lat=${lat}&lon=${lon}&days=${days}`,
+    ),
 
   // ── Forecast change tracking ────────────────────────────────────
   listForecastLocations: () =>
@@ -471,5 +608,14 @@ export const api = {
     return res.json();
   },
 
+  refreshAllForecastLocations: async (): Promise<ForecastLocation[]> => {
+    const res = await fetch(`${BASE}/api/forecast-locations/refresh-all`, { method: 'POST', credentials: 'include' });
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    return res.json();
+  },
+
   getPrices: () => get<CommodityGroup[]>('/prices'),
+
+  getSupplyDemand: (commodity: string) =>
+    get<SupplyDemandSheet>(`/api/supply-demand/${commodity}`),
 };

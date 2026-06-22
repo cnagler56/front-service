@@ -12,7 +12,7 @@ export default function HogsPage() {
         commodityIcon="🐖"
         pricesGroupName="Lean Hogs"
         defaultMonth="12"   // Dec 1 — Q4 Hogs & Pigs is the most recent snapshot for prior year
-        inventoryDescription="Lean Hogs futures, NASS Quarterly Hogs & Pigs snapshot, and top producing states. Drill into the full report from the link above."
+        inventoryDescription="Lean Hogs futures, CFTC positioning, the quarterly Hogs & Pigs report (breeding vs. market), and the NASS inventory snapshot."
       />
     </div>
   );

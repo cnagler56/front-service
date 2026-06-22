@@ -9,6 +9,7 @@ export const NavigationBar = () => {
   // no custom event listening required.
   const { user } = useUser();
   const isLoggedIn = !!user;
+  const isAdmin = user?.roles === 'ADMIN';
 
   return (
     <>
@@ -82,6 +83,26 @@ export const NavigationBar = () => {
           background: rgba(143, 188, 69, 0.2);
         }
 
+        /* Highlighted "challenge" call-to-action link */
+        .farm-nav li a.challenge-link {
+          color: #1a2e0f;
+          background: #8fbc45;
+          font-weight: 700;
+          border-radius: 4px;
+          margin: 0 .3rem;
+          box-shadow: 0 1px 6px rgba(143, 188, 69, 0.45);
+        }
+
+        .farm-nav li a.challenge-link:hover {
+          color: #1a2e0f;
+          background: #a8cc78;
+        }
+
+        /* Suppress the underline indicator on the pill-style challenge link */
+        .farm-nav li a.challenge-link:hover::after {
+          display: none;
+        }
+
         /* Active link indicator */
         .farm-nav li a:hover::after {
           content: '';
@@ -97,6 +118,51 @@ export const NavigationBar = () => {
         .farm-nav li a {
           position: relative;
         }
+
+        /* ── Dropdown menu ── */
+        .farm-nav .dropdown-toggle {
+          font-family: 'Lato', sans-serif;
+          font-weight: 400;
+          font-size: 0.75rem;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: #a8cc78;
+          display: flex;
+          align-items: center;
+          gap: 0.3rem;
+          padding: 0.6rem 1.1rem;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: color 0.2s ease, background 0.2s ease;
+        }
+        .farm-nav .has-dropdown:hover > .dropdown-toggle,
+        .farm-nav .has-dropdown:focus-within > .dropdown-toggle {
+          color: #f0f7e6;
+          background: rgba(143, 188, 69, 0.12);
+        }
+        .farm-nav .dropdown {
+          display: none;
+          position: absolute;
+          top: 100%;
+          left: 0;
+          min-width: 210px;
+          background: #1a2e0f;
+          border: 1px solid #2c4a1e;
+          box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+          list-style: none;
+          margin: 0;
+          padding: 0.25rem 0;
+          z-index: 20;
+        }
+        .farm-nav .has-dropdown:hover > .dropdown,
+        .farm-nav .has-dropdown:focus-within > .dropdown {
+          display: block;
+        }
+        .farm-nav .dropdown li { display: block; }
+        .farm-nav .dropdown li + li::before { display: none; }
+        .farm-nav .dropdown li a { padding: 0.55rem 1.2rem; }
+        .farm-nav .dropdown li a:hover::after { display: none; }
+        .farm-nav .dropdown li a:hover { background: rgba(143, 188, 69, 0.18); }
       `}</style>
 
       <nav className="farm-nav">
@@ -105,13 +171,54 @@ export const NavigationBar = () => {
             <Link href="/home">Home</Link>
           </li>
           <li>
-            <Link href="/corn">Corn</Link>
+            <Link href="/usda-challenge" className="challenge-link">🏆 Yield Challenge</Link>
           </li>
           <li>
-            <Link href="/soybeans">Soybeans</Link>
+            <Link href="/usda-results">Results</Link>
+          </li>
+          <li className="has-dropdown">
+            <span className="dropdown-toggle" role="button" tabIndex={0} aria-haspopup="true">
+              Weather <span aria-hidden="true">▾</span>
+            </span>
+            <ul className="dropdown">
+              <li>
+                <Link href="/weather">Local Weather</Link>
+              </li>
+              <li>
+                <Link href="/enso">El Niño / La Niña</Link>
+              </li>
+              <li>
+                <Link href="/forecast-change">Change in Forecast</Link>
+              </li>
+              <li>
+                <Link href="/forecast-map">Forecast Map</Link>
+              </li>
+            </ul>
+          </li>
+          <li>
+            <Link href="/corn">Corn</Link>
+          </li>
+          <li className="has-dropdown">
+            <span className="dropdown-toggle" role="button" tabIndex={0} aria-haspopup="true">
+              Soybeans <span aria-hidden="true">▾</span>
+            </span>
+            <ul className="dropdown">
+              <li>
+                <Link href="/soybeans">Soybeans</Link>
+              </li>
+              <li>
+                <Link href="/soybean-meal">Soybean Meal</Link>
+              </li>
+              <li>
+                <Link href="/soybean-oil">Soybean Oil</Link>
+              </li>
+            </ul>
           </li>
           <li>
             <Link href="/wheat">Wheat</Link>
+          </li>
+          <li>
+            <Link href="/ethanol">Ethanol</Link>
           </li>
           <li>
             <Link href="/usda-reports">USDA Reports</Link>
@@ -135,23 +242,13 @@ export const NavigationBar = () => {
             <Link href="/calculators">Calculators</Link>
           </li>
           <li>
-            <Link href="/fields">My Fields</Link>
-          </li>
-          <li>
-            <Link href="/weather">Weather</Link>
-          </li>
-          <li>
-            <Link href="/forecast-change">Change in Forecast</Link>
-          </li>
-          <li>
-            <Link href="/forecast-map">Forecast Map</Link>
-          </li>
-          <li>
-            <Link href="/nws">NWS</Link>
-          </li>
-          <li>
             <Link href="/contact">Contact Us</Link>
           </li>
+          {isAdmin && (
+            <li>
+              <Link href="/feedback" className="auth-link">📬 Feedback</Link>
+            </li>
+          )}
           <li>
             {isLoggedIn ? (
               <Link href="/logout" className="auth-link">
