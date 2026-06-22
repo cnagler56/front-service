@@ -55,9 +55,13 @@ const CommodityPrices = () => {
           <p style={{ color: '#c2410c', textAlign: 'center', width: '100%', fontSize: '.85rem' }}>{error}</p>
         ) : (
           <div className={styles.priceGrid}>
-            {groups.map(g => (
-              <CommodityCard key={g.name} group={g} />
-            ))}
+            {/* Soybean Meal / Oil (their own pages) and Feeder Cattle (shown on the
+                Cattle page) are intentionally kept off the home "all commodities" grid. */}
+            {groups
+              .filter(g => !['Soybean Meal', 'Soybean Oil', 'Feeder Cattle'].includes(g.name))
+              .map(g => (
+                <CommodityCard key={g.name} group={g} />
+              ))}
           </div>
         )}
       </div>

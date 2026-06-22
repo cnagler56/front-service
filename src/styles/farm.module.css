@@ -589,7 +589,7 @@
 
 .dailyHeader {
   display: grid;
-  grid-template-columns: 110px 36px 130px 70px 1fr 1.5fr 20px;
+  grid-template-columns: 110px 36px 130px 70px 1fr 20px;
   align-items: center;
   gap: 1rem;
   padding: .55rem 1rem;
@@ -613,7 +613,7 @@
 
 .dailyRow {
   display: grid;
-  grid-template-columns: 110px 36px 130px 70px 1fr 1.5fr 20px;
+  grid-template-columns: 110px 36px 130px 70px 1fr 20px;
   align-items: center;
   gap: 1rem;
   width: 100%;
@@ -642,13 +642,13 @@
   .dailyIcon  { grid-area: icon; }
   .dailyTemps { grid-area: temps; justify-self: end; }
   .dailyShort { grid-area: short; }
-  .dailyPrecip, .dailyWind {
+  .dailyPrecip {
     grid-area: meta;
     display: inline-block;
     font-size: .72rem;
     color: #6a7a55;
+    margin-right: .85rem;
   }
-  .dailyPrecip { margin-right: .85rem; }
   .dailyChevron { grid-area: chev; }
   .dailyHeader { display: none; }
 }
@@ -674,10 +674,6 @@
   font-size: .85rem;
   color: #1d4ed8;
   font-weight: 600;
-}
-.dailyWind {
-  font-size: .85rem;
-  color: #555;
 }
 .dailyShort {
   font-size: .85rem;

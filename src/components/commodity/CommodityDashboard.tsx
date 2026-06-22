@@ -10,13 +10,15 @@ import {
 } from '@/src/lib/api';
 import { useUser } from '@/src/lib/UserContext';
 import SupplyDemandBox from './SupplyDemandBox';
+import CotPanel from './CotPanel';
 import styles from './commodityDashboard.module.css';
 
 interface Props {
-  commodity: string;            // NASS code: "CORN" / "SOYBEANS" / "WHEAT"
-  commodityLabel: string;       // "Corn" / "Soybeans" / "Wheat"
+  commodity: string;            // NASS / WASDE code: "CORN" / "SOYBEANS" / "SOYBEAN_MEAL" …
+  commodityLabel: string;       // "Corn" / "Soybeans" / "Soybean Meal"
   commodityIcon: string;        // "🌽" / "🫘" / "🌾"
-  pricesGroupName: string;      // matches CommodityGroup.name in /prices ("Corn" / "Soybeans" / "Wheat")
+  pricesGroupName: string;      // matches CommodityGroup.name in /prices
+  crushProduct?: boolean;       // meal/oil: no NASS yield or crop progress, so hide those panels
 }
 
 /** "AUG" → "Aug 2026", "YEAR" → "Final 2025" */
@@ -102,7 +104,7 @@ function nationalAvg(rows: { yieldBu?: number; acres?: number | null }[]): numbe
 }
 
 export default function CommodityDashboard({
-  commodity, commodityLabel, commodityIcon, pricesGroupName,
+  commodity, commodityLabel, commodityIcon, pricesGroupName, crushProduct = false,
 }: Props) {
   const { user } = useUser();
   const [prices, setPrices]           = useState<CommodityGroup | null>(null);
@@ -120,8 +122,9 @@ export default function CommodityDashboard({
 
     Promise.all([
       api.getPrices().catch(() => [] as CommodityGroup[]),
-      api.getUsdaYield(commodity).catch(() => null),
-      api.getCropProgress(commodity, thisYear).catch(() => [] as CropProgressData[]),
+      // Crush products (meal/oil) have no NASS yield or crop-progress series — skip those calls.
+      crushProduct ? Promise.resolve(null) : api.getUsdaYield(commodity).catch(() => null),
+      crushProduct ? Promise.resolve([] as CropProgressData[]) : api.getCropProgress(commodity, thisYear).catch(() => [] as CropProgressData[]),
     ]).then(([pricesAll, yieldData, cropProgress]) => {
       if (cancelled) return;
       setPrices(pricesAll.find(g => g.name === pricesGroupName) ?? null);
@@ -134,7 +137,7 @@ export default function CommodityDashboard({
     });
 
     return () => { cancelled = true; };
-  }, [commodity, commodityLabel, pricesGroupName]);
+  }, [commodity, commodityLabel, pricesGroupName, crushProduct]);
 
   // ── Derived: yield headline ───────────────────────────────────────────────
   const yieldHeadline = useMemo(() => {
@@ -228,11 +231,15 @@ export default function CommodityDashboard({
           <span className={styles.heroIcon}>{commodityIcon}</span>
           {commodityLabel} Dashboard
         </h1>
-        <p>Everything for {commodityLabel.toLowerCase()} at a glance — price, USDA estimates, this week's progress, and 5-year trend.</p>
+        <p>
+          {crushProduct
+            ? `Futures and USDA WASDE supply & demand for ${commodityLabel.toLowerCase()}.`
+            : `Everything for ${commodityLabel.toLowerCase()} at a glance — price, USDA estimates, this week's progress, and 5-year trend.`}
+        </p>
       </div>
 
       {/* ── Bento row: Futures + USDA Yield side by side ───────── */}
-      <div className={styles.bentoRow}>
+      <div className={styles.bentoRow} style={crushProduct ? { gridTemplateColumns: '1fr' } : undefined}>
       {/* ── Price strip ────────────────────────────────────────── */}
       <div className={styles.section}>
         <div className={styles.sectionHead}>
@@ -271,7 +278,8 @@ export default function CommodityDashboard({
         </div>
       </div>
 
-      {/* ── USDA Yield ─────────────────────────────────────────── */}
+      {/* ── USDA Yield (crops only) ────────────────────────────── */}
+      {!crushProduct && (
       <div className={styles.section}>
         <div className={styles.sectionHead}>
           <span>🏛️</span>
@@ -314,6 +322,7 @@ export default function CommodityDashboard({
           </div>
         )}
       </div>
+      )}
       </div>{/* end bento row */}
 
       {/* ── Bento row 2: Supply/Demand + Crop Progress ─────────── */}
@@ -321,7 +330,10 @@ export default function CommodityDashboard({
       {/* ── Supply & Demand (WASDE) ────────────────────────────── */}
       <SupplyDemandBox commodity={commodity} commodityLabel={commodityLabel} />
 
-      {/* ── Crop Progress (this week) ──────────────────────────── */}
+      {/* ── Right column: Crop Progress (crops) stacked over Managed Money ── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      {/* ── Crop Progress (this week, crops only) ──────────────── */}
+      {!crushProduct && (
       <div className={styles.section}>
         <div className={styles.sectionHead}>
           <span>🌱</span>
@@ -362,9 +374,13 @@ export default function CommodityDashboard({
           </>
         )}
       </div>
+      )}
+      <CotPanel commodity={commodity} commodityLabel={commodityLabel} />
+      </div>
       </div>{/* end bento row 2 */}
 
-      {/* ── Quick links ────────────────────────────────────────── */}
+      {/* ── Quick links (crops only) ───────────────────────────── */}
+      {!crushProduct && (
       <div className={styles.linkGrid}>
         <QuickLink href="/usda-reports" icon="🏛️" title="USDA Reports"
           desc="Adjust state-by-state yields, submit a guess, see the crowd average." />
@@ -375,6 +391,7 @@ export default function CommodityDashboard({
         <QuickLink href="/forecast-change" icon="📈" title="Forecast Change"
           desc="Track how weather forecasts shift between refreshes." />
       </div>
+      )}
     </div>
   );
 }

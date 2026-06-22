@@ -15,10 +15,11 @@ import SignUpForm from './SignUpForm';
  * can explain to the user why they're staring at a login form again.
  */
 export default function SignInPage() {
-  const [mode, setMode]   = useState<AuthMode>('signin');
-  const [error, setError] = useState('');
   const searchParams = useSearchParams();
   const reason = searchParams?.get('reason');
+  // Allow deep-linking straight to the sign-up tab (e.g. from the USDA Challenge prompt).
+  const [mode, setMode]   = useState<AuthMode>(searchParams?.get('mode') === 'signup' ? 'signup' : 'signin');
+  const [error, setError] = useState('');
 
   function switchMode(next: AuthMode) {
     setMode(next);

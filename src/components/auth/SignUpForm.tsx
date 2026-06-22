@@ -100,6 +100,7 @@ export default function SignUpForm({ onSwitchToSignIn, onError }: Props) {
           <option value="Advisor">Advisor</option>
           <option value="Student">Student</option>
           <option value="Investor">Investor</option>
+          <option value="Retired">Retired</option>
           <option value="Other">Other</option>
         </select>
       </div>

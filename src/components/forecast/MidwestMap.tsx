@@ -161,11 +161,13 @@ function avgPrecipDelta(curr: ForecastSnapshot | null, prev: ForecastSnapshot | 
 /* ── Marker color from a delta ────────────────────────────────── */
 
 const NO_DATA_COLOR = '#9ca3af';     // grey for "no previous snapshot"
-const NEUTRAL: [number, number, number] = [204, 204, 204];
-const WARM:    [number, number, number] = [185, 28, 28];   // #b91c1c
-const COOL:    [number, number, number] = [29, 78, 216];   // #1d4ed8
-const WET:     [number, number, number] = [30, 110, 210];
-const DRY:     [number, number, number] = [161, 98, 7];    // #a16207
+// Pure light→strong ramps (no grey midpoint, so even small deltas read as a
+// clean light blue / light red instead of muddy bluish-grey or brown).
+const BLUE_LIGHT:  [number, number, number] = [191, 219, 254]; // #bfdbfe
+const BLUE_STRONG: [number, number, number] = [ 29,  78, 216]; // #1d4ed8
+const RED_LIGHT:   [number, number, number] = [254, 202, 202]; // #fecaca
+const RED_STRONG:  [number, number, number] = [220,  38,  38]; // #dc2626
+const ZERO_COLOR = '#d1d5db'; // no-change dots render hollow, so this is rarely seen
 
 function lerp(a: number, b: number, t: number): number {
   return Math.round(a + (b - a) * t);
@@ -183,9 +185,9 @@ function markerTempColor(delta: number | null): string {
   if (delta == null) return NO_DATA_COLOR;
   const cap = 5;
   const mag = Math.min(Math.abs(delta), cap) / cap;
-  if (delta > 0) return lerpColor(NEUTRAL, WARM, mag);
-  if (delta < 0) return lerpColor(NEUTRAL, COOL, mag);
-  return lerpColor(NEUTRAL, NEUTRAL, 0);
+  if (delta > 0) return lerpColor(RED_LIGHT, RED_STRONG, mag);   // warmer
+  if (delta < 0) return lerpColor(BLUE_LIGHT, BLUE_STRONG, mag); // cooler
+  return ZERO_COLOR;
 }
 
 /** Precip marker color — caps at ±20 percentage points. */
@@ -193,9 +195,9 @@ function markerPrecipColor(delta: number | null): string {
   if (delta == null) return NO_DATA_COLOR;
   const cap = 20;
   const mag = Math.min(Math.abs(delta), cap) / cap;
-  if (delta > 0) return lerpColor(NEUTRAL, WET, mag);
-  if (delta < 0) return lerpColor(NEUTRAL, DRY, mag);
-  return lerpColor(NEUTRAL, NEUTRAL, 0);
+  if (delta > 0) return lerpColor(BLUE_LIGHT, BLUE_STRONG, mag); // wetter
+  if (delta < 0) return lerpColor(RED_LIGHT, RED_STRONG, mag);   // drier
+  return ZERO_COLOR;
 }
 
 /* ── Marker appearance ────────────────────────────────────────────

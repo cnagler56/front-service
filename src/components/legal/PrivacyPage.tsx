@@ -88,7 +88,8 @@ export default function PrivacyPage() {
             <ul style={listStyle}>
               <li>
                 <strong>With other users</strong> — only the content you choose to make public (e.g. a listing or a
-                shared community guess). You can submit a guess privately if you prefer it not appear in public lists.
+                community guess). Guesses you submit to the USDA Challenge are public and appear, by your name, in the
+                community roster and leaderboard.
               </li>
               <li>
                 <strong>Service providers</strong> — we use an email provider (Brevo) to send transactional emails such

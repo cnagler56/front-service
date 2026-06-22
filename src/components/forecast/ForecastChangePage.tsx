@@ -97,9 +97,8 @@ export default function ForecastChangePage() {
           <p style={{ fontFamily: 'Lato, sans-serif', fontSize: '.85rem', color: '#666', marginBottom: '1.25rem' }}>
             Snapshots are taken automatically at <strong>3:01 AM</strong> and <strong>3:01 PM Central</strong>,
             one minute after NWS's two daily forecast revisions. Cells are shaded by the delta vs the
-            previous snapshot — <span style={{ color: '#b91c1c', fontWeight: 700 }}>red</span> = warmer,
-            {' '}<span style={{ color: '#1d4ed8', fontWeight: 700 }}>blue</span> = cooler/wetter,
-            {' '}<span style={{ color: '#a16207', fontWeight: 700 }}>tan</span> = drier. New locations
+            previous snapshot — <span style={{ color: '#dc2626', fontWeight: 700 }}>red</span> = warmer/drier,
+            {' '}<span style={{ color: '#1d4ed8', fontWeight: 700 }}>blue</span> = cooler/wetter. New locations
             get their first snapshot immediately on add.
           </p>
 

@@ -65,13 +65,30 @@ export default function DroughtAndSoil({ lat, lon, locationLabel }: Props) {
   // Trend chart: only days with real readings (drops the trailing blank days).
   const trendRows = (rows ?? []).filter(r => r.GWETROOT != null);
 
+  // Raw root-zone moisture sits in a narrow band (e.g. 0.60–0.75), so on a flat
+  // 0–100% scale every bar looks identical. Scale the bars to the period's own
+  // range instead — with a minimum span so a near-flat week isn't exaggerated —
+  // and label that range on the left axis. Color still encodes the absolute level.
+  const trendVals = trendRows.map(r => r.GWETROOT as number);
+  const rawMin = trendVals.length ? Math.min(...trendVals) : 0;
+  const rawMax = trendVals.length ? Math.max(...trendVals) : 1;
+  const center = (rawMin + rawMax) / 2;
+  const halfSpan = Math.max((rawMax - rawMin) / 2, 0.025); // ≥5-pt window
+  const domainMin = Math.max(0, center - halfSpan);
+  const domainMax = Math.min(1, center + halfSpan);
+  const domainSpan = Math.max(domainMax - domainMin, 0.001);
+  const barHeight = (v: number) => {
+    const frac = Math.min(1, Math.max(0, (v - domainMin) / domainSpan));
+    return 8 + frac * 70; // px within the 100px track (leaves room for the day label)
+  };
+
   return (
-    <div className={styles.section} style={{ overflow: 'visible' }}>
+    <div className={styles.section} style={{ overflow: 'visible', flex: 1, margin: 0, display: 'flex', flexDirection: 'column' }}>
       <div className={styles.sectionHead}>
         <span>🛰️</span>
         <h2>Soil Moisture</h2>
       </div>
-      <div className={styles.sectionBody}>
+      <div className={styles.sectionBody} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <p style={{ margin: '0 0 .75rem', fontSize: '.78rem', color: '#888' }}>
           {locationLabel ? `For ${locationLabel}` : 'For your location'}.
           Source: NASA POWER. 0 = dry, 1 = saturated.
@@ -106,30 +123,46 @@ export default function DroughtAndSoil({ lat, lon, locationLabel }: Props) {
         )}
 
         {trendRows.length > 0 && (
-          <>
+          <div style={{ marginTop: 'auto' }}>
             <h4 style={{
               fontFamily: 'Lato, sans-serif',
               fontSize: '.7rem',
               color: '#6a7a55',
               textTransform: 'uppercase',
               letterSpacing: '.05em',
-              margin: '1rem 0 .35rem',
-            }}>Root-zone trend</h4>
-            <div className={styles.moistureBars}>
-              {trendRows.map(r => (
-                <div key={r.date} title={`${fmtPower(r.date)}: root ${r.GWETROOT?.toFixed(2) ?? '—'}`}>
-                  <div
-                    className={styles.moistureBar}
-                    style={{
-                      height: r.GWETROOT == null ? 2 : Math.max(2, r.GWETROOT * 80),
-                      background: moistureColor(r.GWETROOT),
-                    }}
-                  />
-                  <span className={styles.moistureBarLabel}>{fmtPower(r.date).split(' ')[1]}</span>
-                </div>
-              ))}
+              margin: '1rem 0 .25rem',
+            }}>Root-zone moisture · last {trendRows.length} days</h4>
+            <p style={{ fontSize: '.7rem', color: '#888', margin: '0 0 .5rem', fontFamily: 'Lato, sans-serif' }}>
+              Water in the top ~1&nbsp;m of soil, where roots draw from. Bars are scaled to this
+              period&rsquo;s range (left axis) so day-to-day changes show; color shows the absolute level.
+            </p>
+            <div style={{ display: 'flex', gap: '.4rem' }}>
+              {/* Left axis — the % range the bars span over this window */}
+              <div style={{
+                display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                height: 100, paddingBottom: 16, textAlign: 'right',
+                fontSize: '.58rem', color: '#aaa', fontFamily: 'Lato, sans-serif',
+              }}>
+                <span>{Math.round(domainMax * 100)}%</span>
+                <span>{Math.round(((domainMin + domainMax) / 2) * 100)}%</span>
+                <span>{Math.round(domainMin * 100)}%</span>
+              </div>
+              <div className={styles.moistureBars} style={{ flex: 1 }}>
+                {trendRows.map(r => (
+                  <div key={r.date} title={`${fmtPower(r.date)}: ${Math.round((r.GWETROOT ?? 0) * 100)}% root-zone moisture`}>
+                    <div
+                      className={styles.moistureBar}
+                      style={{
+                        height: barHeight(r.GWETROOT as number),
+                        background: moistureColor(r.GWETROOT),
+                      }}
+                    />
+                    <span className={styles.moistureBarLabel}>{fmtPower(r.date).split(' ')[1]}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>

@@ -22,6 +22,25 @@ function fmt(v: number | null | undefined): string {
   return v.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
+/** Month-over-month change styling for the new-crop column. */
+function changeMeta(cur: number | null | undefined, prev: number | null | undefined) {
+  if (cur == null || prev == null) return null;
+  const delta = cur - prev;
+  if (Math.abs(delta) < 1e-9) return { delta: 0, bg: undefined as string | undefined, fg: '#8a9678' };
+  const up = delta > 0;
+  return {
+    delta,
+    bg: up ? 'rgba(46,160,67,0.16)' : 'rgba(208,48,48,0.14)',
+    fg: up ? '#1a7f37' : '#b42318',
+  };
+}
+
+/** Absolute change with a sign, e.g. "+129" / "−54". */
+function fmtDelta(d: number): string {
+  if (d === 0) return '±0';
+  return (d > 0 ? '+' : '−') + Math.abs(d).toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
 const isEnding     = (r: SupplyDemandRow) => norm(r.attribute).includes('endingstocks');
 const isTotal      = (r: SupplyDemandRow) => norm(r.attribute).includes('total');
@@ -56,6 +75,7 @@ export default function SupplyDemandBox({ commodity, commodityLabel }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [region, setRegion] = useState<Region>('US');
+  const [showChanges, setShowChanges] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -147,6 +167,37 @@ export default function SupplyDemandBox({ commodity, commodityLabel }: Props) {
 
         {ordered.length > 0 && (
           <>
+            {/* Month-over-month toggle — its own line, with an explanation. */}
+            <label
+              style={{
+                display: 'flex', alignItems: 'flex-start', gap: '.5rem',
+                margin: '0 0 1rem', padding: '.6rem .75rem', borderRadius: 6,
+                background: '#f5f8ee', border: '1px solid #e1dccc',
+                fontFamily: 'Lato, sans-serif', fontSize: '.78rem', lineHeight: 1.4,
+                color: '#3d6b2a', cursor: 'pointer',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={showChanges}
+                onChange={e => setShowChanges(e.target.checked)}
+                style={{ accentColor: '#3d6b2a', cursor: 'pointer', marginTop: '.15rem' }}
+              />
+              <span>
+                <strong>Highlight changes since last month</strong>
+                {sheet?.prevReportDate ? (
+                  <>
+                    {' — '}shades the {latestYear != null ? yearLabel(latestYear) : 'new-crop'} column{' '}
+                    <span style={{ color: '#1a7f37', fontWeight: 700 }}>green</span> when a value rose and{' '}
+                    <span style={{ color: '#b42318', fontWeight: 700 }}>red</span> when it fell vs the{' '}
+                    {sheet.prevReportDate} WASDE, with the amount of change.
+                  </>
+                ) : (
+                  <>{' — '}no prior month is loaded yet, so there is nothing to compare.</>
+                )}
+              </span>
+            </label>
+
             {/* Highlight chips for the new-crop year */}
             {latestYear != null && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.6rem', marginBottom: '1rem' }}>
@@ -218,16 +269,25 @@ export default function SupplyDemandBox({ commodity, commodityLabel }: Props) {
                             {r.attribute}
                             {r.unit && <span style={{ color: '#aaa', fontSize: '.7rem', marginLeft: '.4rem', fontWeight: 400, fontStyle: 'normal' }}>{r.unit}</span>}
                           </td>
-                          {years.map((y, j) => (
-                            <td key={y} style={{
-                              ...td(), textAlign: 'right', fontVariantNumeric: 'tabular-nums',
-                              fontWeight: emphasize || j === 0 ? 700 : 500,
-                              color: appendix ? '#8a9678' : j === 0 ? '#1a2e0f' : '#55624a',
-                              background: j === 0 && !appendix ? 'rgba(143,188,69,0.08)' : undefined,
-                            }}>
-                              {fmt(r.values[j])}
-                            </td>
-                          ))}
+                          {years.map((y, j) => {
+                            // Month-over-month change only on the new-crop column.
+                            const ch = j === 0 && showChanges ? changeMeta(r.values[0], r.prev) : null;
+                            return (
+                              <td key={y} style={{
+                                ...td(), textAlign: 'right', fontVariantNumeric: 'tabular-nums',
+                                fontWeight: emphasize || j === 0 ? 700 : 500,
+                                color: appendix ? '#8a9678' : j === 0 ? '#1a2e0f' : '#55624a',
+                                background: ch?.bg ?? (j === 0 && !appendix ? 'rgba(143,188,69,0.08)' : undefined),
+                              }}>
+                                {fmt(r.values[j])}
+                                {ch && ch.delta !== 0 && (
+                                  <span style={{ display: 'block', fontSize: '.62rem', fontWeight: 700, color: ch.fg, marginTop: '1px' }}>
+                                    {fmtDelta(ch.delta)}
+                                  </span>
+                                )}
+                              </td>
+                            );
+                          })}
                         </tr>
 
                         {/* Stocks-to-use trend, right under Ending Stocks */}
@@ -256,8 +316,7 @@ export default function SupplyDemandBox({ commodity, commodityLabel }: Props) {
             </div>
 
             <p style={{ margin: '.7rem 0 0', fontSize: '.7rem', color: '#999', fontFamily: 'Lato, sans-serif' }}>
-              USDA WASDE{sheet?.reportDate ? ` · ${sheet.reportDate}` : ''} · official figures.
-              {region === 'US' ? ' U.S. in million bushels / acres.' : ' World in MMT.'}
+              USDA WASDE{sheet?.reportDate ? ` · ${sheet.reportDate}` : ''} · official figures, in the units shown on each row.
             </p>
           </>
         )}

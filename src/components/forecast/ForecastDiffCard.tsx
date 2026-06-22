@@ -30,27 +30,27 @@ function fmtTs(iso: string | null | undefined): string {
 
 /**
  * Map a temperature delta (°F) to a background color.
- * Red = warmer, blue = cooler, intensity scaled at ±10°.
+ * Pure red = warmer, pure blue = cooler, intensity scaled at ±10°.
  */
 function tempBg(delta: number | null): string {
   if (delta == null || !isFinite(delta)) return 'transparent';
   const cap = 10;
   const mag = Math.min(Math.abs(delta), cap) / cap; // 0..1
-  if (delta > 0) return `rgba(220, 60, 60, ${(0.10 + 0.32 * mag).toFixed(2)})`;
-  if (delta < 0) return `rgba(40, 100, 220, ${(0.10 + 0.32 * mag).toFixed(2)})`;
+  if (delta > 0) return `rgba(220, 38, 38, ${(0.10 + 0.32 * mag).toFixed(2)})`;  // warmer
+  if (delta < 0) return `rgba(29, 78, 216, ${(0.10 + 0.32 * mag).toFixed(2)})`;  // cooler
   return 'transparent';
 }
 
 /**
  * Map a precip-chance delta (% points) to a background color.
- * Blue = wetter, tan = drier, intensity scaled at ±40 points.
+ * Pure blue = wetter, pure red = drier, intensity scaled at ±40 points.
  */
 function precipBg(delta: number | null): string {
   if (delta == null || !isFinite(delta)) return 'transparent';
   const cap = 40;
   const mag = Math.min(Math.abs(delta), cap) / cap;
-  if (delta > 0) return `rgba(30, 110, 210, ${(0.10 + 0.40 * mag).toFixed(2)})`;
-  if (delta < 0) return `rgba(190, 150, 70, ${(0.10 + 0.40 * mag).toFixed(2)})`;
+  if (delta > 0) return `rgba(29, 78, 216, ${(0.10 + 0.40 * mag).toFixed(2)})`;  // wetter
+  if (delta < 0) return `rgba(220, 38, 38, ${(0.10 + 0.40 * mag).toFixed(2)})`;  // drier
   return 'transparent';
 }
 
@@ -128,7 +128,7 @@ export default function ForecastDiffCard({ location, onEdit, onDelete }: Props) 
                 <span className={styles.cell} style={{ background: tempBg(hiDelta) }}>
                   <strong>{d.high != null ? `${d.high}°` : '—'}</strong>
                   {hiDelta != null && hiDelta !== 0 && (
-                    <span className={styles.deltaPill} style={{ color: hiDelta > 0 ? '#b91c1c' : '#1d4ed8' }}>
+                    <span className={styles.deltaPill} style={{ color: hiDelta > 0 ? '#dc2626' : '#1d4ed8' }}>
                       {deltaStr(hiDelta, '°')}
                     </span>
                   )}
@@ -137,7 +137,7 @@ export default function ForecastDiffCard({ location, onEdit, onDelete }: Props) 
                 <span className={styles.cell} style={{ background: tempBg(loDelta) }}>
                   <strong>{d.low != null ? `${d.low}°` : '—'}</strong>
                   {loDelta != null && loDelta !== 0 && (
-                    <span className={styles.deltaPill} style={{ color: loDelta > 0 ? '#b91c1c' : '#1d4ed8' }}>
+                    <span className={styles.deltaPill} style={{ color: loDelta > 0 ? '#dc2626' : '#1d4ed8' }}>
                       {deltaStr(loDelta, '°')}
                     </span>
                   )}
@@ -146,7 +146,7 @@ export default function ForecastDiffCard({ location, onEdit, onDelete }: Props) 
                 <span className={styles.cell} style={{ background: precipBg(pcDelta) }}>
                   <strong>{d.precipChance != null ? `${d.precipChance}%` : '—'}</strong>
                   {pcDelta != null && pcDelta !== 0 && (
-                    <span className={styles.deltaPill} style={{ color: pcDelta > 0 ? '#1d4ed8' : '#a16207' }}>
+                    <span className={styles.deltaPill} style={{ color: pcDelta > 0 ? '#1d4ed8' : '#dc2626' }}>
                       {deltaStr(pcDelta, '%')}
                     </span>
                   )}

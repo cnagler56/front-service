@@ -78,7 +78,6 @@ export default function DailyForecast({ periods }: Props) {
         <span></span>
         <span>High / Low</span>
         <span>Precip</span>
-        <span>Wind</span>
         <span>Forecast</span>
       </div>
 
@@ -89,7 +88,6 @@ export default function DailyForecast({ periods }: Props) {
         const high = d.day?.temperature;
         const low  = d.night?.temperature;
         const precip = Math.max(d.day?.precipChance ?? 0, d.night?.precipChance ?? 0);
-        const wind = d.day ?? d.night;
         const isOpen = expanded === d.key;
 
         return (
@@ -109,10 +107,6 @@ export default function DailyForecast({ periods }: Props) {
               </span>
               <span className={styles.dailyPrecip}>
                 {precip > 0 ? `${precip}%` : '—'}
-              </span>
-              <span className={styles.dailyWind}>
-                {wind?.windSpeed ?? '—'}
-                {wind?.windDirection ? ` ${wind.windDirection}` : ''}
               </span>
               <span className={styles.dailyShort}>
                 {headline.shortForecast}
