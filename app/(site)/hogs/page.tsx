@@ -9,7 +9,6 @@ export default function HogsPage() {
       <LivestockDashboard
         commodity="HOGS"
         commodityLabel="Hogs"
-        commodityIcon="🐖"
         pricesGroupName="Lean Hogs"
         defaultMonth="12"   // Dec 1 — Q4 Hogs & Pigs is the most recent snapshot for prior year
         inventoryDescription="Lean Hogs futures, CFTC positioning, the quarterly Hogs & Pigs report (breeding vs. market), and the NASS inventory snapshot."

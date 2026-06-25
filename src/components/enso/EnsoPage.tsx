@@ -53,7 +53,7 @@ export default function EnsoPage() {
     <div className={styles.page}>
       <div className={styles.section}>
         <div className={styles.sectionHead}>
-          <span>🌊</span>
+          
           <h2>El Niño / La Niña Tracker</h2>
         </div>
         <div className={styles.sectionBody}>

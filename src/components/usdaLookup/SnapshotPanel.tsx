@@ -3,7 +3,20 @@
 import { useMemo, useState } from 'react';
 import { api, NASSYieldData } from '@/src/lib/api';
 import styles from '@/src/styles/farm.module.css';
+import card from '@/src/components/usdaReports/reportCards.module.css';
 import { classify, unit } from './nassClassify';
+
+/** NASS sends ALL-CAPS state names; render them title-cased. */
+function titleCaseState(s: string): string {
+  return (s || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
+
+/** Numeric value for sorting; non-numeric ("N/A", "(D)", …) sort last. */
+function parseNum(v?: string): number | null {
+  if (!v) return null;
+  const n = parseFloat(v.replace(/[,\s]/g, ''));
+  return isNaN(n) ? null : n;
+}
 
 const GRAINS = [
   { value: 'CORN',     label: 'Corn'     },
@@ -27,17 +40,22 @@ interface Props {
 export default function SnapshotPanel({ grain, onGrainChange }: Props) {
   const [year, setYear]         = useState(YEARS[1]);
   const [data, setData]         = useState<NASSYieldData[]>([]);
+  // The commodity the displayed `data` belongs to — drives the table titles so
+  // they don't change when the dropdown changes before a new Fetch.
+  const [loadedGrain, setLoadedGrain] = useState('');
   const [category, setCategory] = useState<string>('ALL');
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState('');
   const [fetched, setFetched]   = useState(false);
 
   async function fetchData() {
+    const g = grain;                 // pin the commodity for this fetch
     setLoading(true);
     setError('');
     try {
-      const result = await api.getNassYield(grain, '', year);
+      const result = await api.getNassYield(g, '', year);
       setData(result);
+      setLoadedGrain(g);
       setCategory('ALL');
       setFetched(true);
     } catch {
@@ -63,7 +81,7 @@ export default function SnapshotPanel({ grain, onGrainChange }: Props) {
   return (
     <div className={styles.section}>
       <div className={styles.sectionHead}>
-        <span>🏛️</span>
+        
         <h2>USDA NASS Yield Reports</h2>
       </div>
       <div className={styles.sectionBody}>
@@ -111,48 +129,57 @@ export default function SnapshotPanel({ grain, onGrainChange }: Props) {
           </p>
         )}
 
-        {visibleGroups.map(group => <ClassTable key={group.cls} grain={grain} cls={group.cls} rows={group.rows} />)}
+        {visibleGroups.length > 0 && (
+          <div className={`${card.grid} ${card.gridCenter}`}>
+            {visibleGroups.map(group => <ClassCard key={group.cls} grain={loadedGrain} cls={group.cls} rows={group.rows} />)}
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-/** One labeled table per NASS class. Small enough to keep co-located. */
-function ClassTable({ grain, cls, rows }: { grain: string; cls: string; rows: NASSYieldData[] }) {
+/** One card per NASS class, sorted by acres harvested (largest first). */
+function ClassCard({ grain, cls, rows }: { grain: string; cls: string; rows: NASSYieldData[] }) {
   const yieldUnit = unit(rows[0]?.short_desc) || 'units / acre';
+  const sorted = useMemo(() => {
+    return [...rows].sort((a, b) => {
+      const av = parseNum(a.acresValue), bv = parseNum(b.acresValue);
+      if (av == null && bv == null) return 0;
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      return bv - av;
+    });
+  }, [rows]);
+
   return (
-    <div style={{ marginBottom: '2rem' }}>
-      <h3 style={{
-        fontFamily: 'Playfair Display, Georgia, serif',
-        color: '#2c4a1e',
-        fontSize: '1.1rem',
-        margin: '0 0 .35rem',
-        borderBottom: '2px solid #c9dfa3',
-        paddingBottom: '.35rem',
-      }}>
-        {grain} — {cls}
-        <span style={{ color: '#888', fontSize: '.75rem', fontWeight: 400, marginLeft: '.5rem' }}>
-          ({rows.length} state{rows.length === 1 ? '' : 's'})
+    <div className={card.card}>
+      <div className={card.cardHead}>
+        <h3 className={card.cardTitle}>{grain} — {cls}</h3>
+        <span className={card.count}>
+          {rows.length} state{rows.length === 1 ? '' : 's'}
         </span>
-      </h3>
-      <table className={styles.table}>
-        <thead>
-          <tr>
-            <th>State</th>
-            <th>Yield ({yieldUnit})</th>
-            <th>Acres Harvested</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, i) => (
-            <tr key={i}>
-              <td>{row.state_name}</td>
-              <td>{row.Value}</td>
-              <td>{row.acresValue}</td>
+      </div>
+      <div className={card.scroll}>
+        <table className={card.table}>
+          <thead>
+            <tr>
+              <th>State</th>
+              <th className={card.num}>Yield ({yieldUnit})</th>
+              <th className={card.num}>Acres Harv.</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {sorted.map((row, i) => (
+              <tr key={i}>
+                <td>{titleCaseState(row.state_name)}</td>
+                <td className={card.num}>{row.Value}</td>
+                <td className={card.num}>{row.acresValue}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

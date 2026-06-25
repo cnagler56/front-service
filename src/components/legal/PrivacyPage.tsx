@@ -17,7 +17,7 @@ export default function PrivacyPage() {
     <div className={styles.page}>
       <div className={styles.section} style={{ maxWidth: 820, margin: '0 auto' }}>
         <div className={styles.sectionHead}>
-          <span>🔒</span>
+          
           <h2>Privacy Policy</h2>
         </div>
         <div className={styles.sectionBody} style={{ fontFamily: 'Lato, sans-serif', color: '#333', lineHeight: 1.7, fontSize: '.92rem' }}>

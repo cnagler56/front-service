@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { ForecastLocation, ForecastSnapshot } from '@/src/lib/api';
+import { api, CropProductionData, ForecastLocation, ForecastSnapshot } from '@/src/lib/api';
 import styles from './midwestMap.module.css';
 import farmStyles from '@/src/styles/farm.module.css';
 
@@ -121,19 +121,50 @@ function geometryToPath(g: GeoFeature['geometry']): string {
   return g.coordinates.flat().map(ringToPath).join(' ');
 }
 
+/* ── Crop production overlay ───────────────────────────────────────
+   County boundaries (simplified, 14 Midwest states) shipped as a static
+   asset, shaded by USDA NASS county production for the chosen crop. */
+type ProdCrop = 'CORN' | 'SOYBEANS' | 'WHEAT';
+const CROP_LABEL: Record<ProdCrop, string> = { CORN: 'Corn', SOYBEANS: 'Soybeans', WHEAT: 'Wheat' };
+const COUNTY_GEO_URL = '/midwest-counties.geojson';
+
+interface CountyFeature {
+  type: 'Feature';
+  id: string;                       // 5-digit FIPS
+  properties: { name?: string };
+  geometry:
+    | { type: 'Polygon';      coordinates: number[][][] }
+    | { type: 'MultiPolygon'; coordinates: number[][][][] };
+}
+
+// Light→dark green for production intensity (sqrt spread, like the SA map).
+const PROD_LIGHT: [number, number, number] = [214, 238, 191];
+const PROD_DARK:  [number, number, number] = [ 22,  90,  30];
+function prodColor(v: number, max: number): string {
+  if (v <= 0 || max <= 0) return 'transparent';
+  return lerpColor(PROD_LIGHT, PROD_DARK, Math.sqrt(v / max));
+}
+function fmtBu(v: number): string {
+  if (v >= 1e9) return (v / 1e9).toFixed(2) + ' bil bu';
+  if (v >= 1e6) return (v / 1e6).toFixed(1) + ' mil bu';
+  return v.toLocaleString() + ' bu';
+}
+
 /* ── Per-location average deltas ──────────────────────────────── */
 
 /**
- * Mean (current − previous) across the next 5 forecast days. We average both
- * High and Low deltas together for the temperature view, and average precip%
- * deltas for the precipitation view. Returns null if there's not enough data.
+ * Mean (current − previous) across the next 5 forecast days, skipping today
+ * (day index 0) — today's forecast can swing dramatically intraday in ways that
+ * aren't meaningful. We average both High and Low deltas together for the
+ * temperature view, and average precip% deltas for the precipitation view.
+ * Returns null if there's not enough data.
  */
 function avgTempDelta(curr: ForecastSnapshot | null, prev: ForecastSnapshot | null): number | null {
   if (!curr?.days || !prev?.days) return null;
   const prevMap = new Map<string, NonNullable<ForecastSnapshot['days']>[number]>();
   for (const d of prev.days) prevMap.set(d.day, d);
   let sum = 0, n = 0;
-  for (const d of curr.days.slice(0, 5)) {
+  for (const d of curr.days.slice(1, 6)) {
     const p = prevMap.get(d.day);
     if (!p) continue;
     if (d.high != null && p.high != null) { sum += d.high - p.high; n++; }
@@ -147,7 +178,7 @@ function avgPrecipDelta(curr: ForecastSnapshot | null, prev: ForecastSnapshot | 
   const prevMap = new Map<string, NonNullable<ForecastSnapshot['days']>[number]>();
   for (const d of prev.days) prevMap.set(d.day, d);
   let sum = 0, n = 0;
-  for (const d of curr.days.slice(0, 5)) {
+  for (const d of curr.days.slice(1, 6)) {
     const p = prevMap.get(d.day);
     if (!p) continue;
     if (d.precipChance != null && p.precipChance != null) {
@@ -305,12 +336,18 @@ export default function MidwestMap({ locations }: Props) {
   const [error, setError]     = useState('');
   const [hoverId, setHoverId] = useState<number | null>(null);
   const [hoverXY, setHoverXY] = useState<{ x: number; y: number } | null>(null);
-  const [metric, setMetric]   = useState<Metric>('TEMP');
+  const [metric, setMetric]   = useState<Metric>('PRECIP');
 
   // US Drought Monitor background layer
   const [drought, setDrought]       = useState<DroughtPoly[]>([]);
   const [droughtDate, setDroughtDate] = useState<Date | null>(null);
   const [showDrought, setShowDrought] = useState(true);
+
+  // Crop-production overlay (county choropleth, lazy-loaded)
+  const [showProd, setShowProd]   = useState(false);
+  const [prodCrop, setProdCrop]   = useState<ProdCrop>('CORN');
+  const [counties, setCounties]   = useState<CountyFeature[]>([]);
+  const [prodData, setProdData]   = useState<Record<ProdCrop, CropProductionData | null>>({ CORN: null, SOYBEANS: null, WHEAT: null });
 
   /**
    * Per-location delta the markers are colored by. Computed once per
@@ -366,6 +403,55 @@ export default function MidwestMap({ locations }: Props) {
     return () => { cancelled = true; };
   }, []);
 
+  // Lazy-load county outlines the first time the production layer is enabled.
+  useEffect(() => {
+    if (!showProd || counties.length > 0) return;
+    let cancelled = false;
+    fetch(COUNTY_GEO_URL)
+      .then(r => r.json())
+      .then((g: { features: CountyFeature[] }) => { if (!cancelled) setCounties(g.features ?? []); })
+      .catch(() => { /* overlay is optional — fail quietly */ });
+    return () => { cancelled = true; };
+  }, [showProd, counties.length]);
+
+  // Load production figures for the chosen crop (cached per crop).
+  useEffect(() => {
+    if (!showProd || prodData[prodCrop]) return;
+    let cancelled = false;
+    api.getCropProduction(prodCrop)
+      .then(d => { if (!cancelled) setProdData(prev => ({ ...prev, [prodCrop]: d })); })
+      .catch(() => { /* optional */ });
+    return () => { cancelled = true; };
+  }, [showProd, prodCrop, prodData]);
+
+  const activeProd = prodData[prodCrop];
+  const prodMax = useMemo(
+    () => Math.max(1, ...Object.values(activeProd?.byFips ?? {})),
+    [activeProd],
+  );
+
+  // Memoized — 1,270 county paths shouldn't rebuild on every hover.
+  const productionLayer = useMemo(() => {
+    if (!showProd || counties.length === 0 || !activeProd) return null;
+    const byFips = activeProd.byFips ?? {};
+    return (
+      <g style={{ pointerEvents: 'none' }}>
+        {counties.map(f => {
+          const v = byFips[f.id];
+          if (v == null) return null;
+          return (
+            <path
+              key={f.id}
+              d={geometryToPath(f.geometry)}
+              fill={prodColor(v, prodMax)}
+              fillOpacity={0.8}
+            />
+          );
+        })}
+      </g>
+    );
+  }, [showProd, counties, activeProd, prodMax]);
+
   const hoverLoc = useMemo(
     () => locations.find(l => l.id === hoverId) ?? null,
     [hoverId, locations],
@@ -384,6 +470,18 @@ export default function MidwestMap({ locations }: Props) {
     if (!hoverLoc || hoverLoc.lat == null || hoverLoc.lon == null || drought.length === 0) return null;
     return droughtCategoryAt(hoverLoc.lon, hoverLoc.lat, drought);
   }, [hoverLoc, drought]);
+
+  // Production for the county under the hovered location (only while the overlay is on).
+  const hoverProd = useMemo(() => {
+    if (!showProd || !hoverLoc || hoverLoc.lat == null || hoverLoc.lon == null || !activeProd || counties.length === 0) return null;
+    for (const f of counties) {
+      if (geomContains(hoverLoc.lon, hoverLoc.lat, f.geometry)) {
+        const v = activeProd.byFips?.[f.id];
+        return v == null ? null : { county: f.properties?.name, value: v };
+      }
+    }
+    return null;
+  }, [showProd, hoverLoc, activeProd, counties]);
 
   return (
     <div className={styles.mapWrap}>
@@ -413,12 +511,33 @@ export default function MidwestMap({ locations }: Props) {
           >
             🏜️ Drought {showDrought ? 'on' : 'off'}
           </button>
+          <button
+            type="button"
+            onClick={() => setShowProd(s => !s)}
+            className={`${farmStyles.filterPill} ${showProd ? farmStyles.filterPillActive : ''}`}
+            title="Shade counties by crop production (USDA NASS)"
+          >
+            🌾 Production {showProd ? 'on' : 'off'}
+          </button>
+          {showProd && (['CORN', 'SOYBEANS', 'WHEAT'] as ProdCrop[]).map(c => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => setProdCrop(c)}
+              className={`${farmStyles.filterPill} ${prodCrop === c ? farmStyles.filterPillActive : ''}`}
+            >
+              {CROP_LABEL[c]}
+            </button>
+          ))}
         </div>
         <Legend metric={metric} />
       </div>
 
       {/* Drought legend + release date */}
       {showDrought && drought.length > 0 && <DroughtLegend asOf={droughtDate} />}
+
+      {/* Production legend */}
+      {showProd && <ProductionLegend crop={prodCrop} data={activeProd} />}
 
       {error && <p className={styles.error}>{error}</p>}
 
@@ -453,8 +572,11 @@ export default function MidwestMap({ locations }: Props) {
           </g>
         )}
 
-        {/* Re-draw crisp state borders on top of the drought fill */}
-        {showDrought && drought.length > 0 && (
+        {/* Crop-production county choropleth (USDA NASS) */}
+        {productionLayer}
+
+        {/* Re-draw crisp state borders on top of the fill layers */}
+        {((showDrought && drought.length > 0) || (showProd && counties.length > 0)) && (
           <g style={{ pointerEvents: 'none' }}>
             {stateFeatures.map(f => (
               <path
@@ -531,7 +653,7 @@ export default function MidwestMap({ locations }: Props) {
             top: Math.min(hoverXY.y + 15, window.innerHeight - 280),
           }}
         >
-          <h4>📍 {hoverLoc.name}</h4>
+          <h4>{hoverLoc.name}</h4>
           <p className={styles.tooltipMeta}>
             Updated <strong>{fmtTs(hoverLoc.currentFetchedAt)}</strong>
           </p>
@@ -551,6 +673,17 @@ export default function MidwestMap({ locations }: Props) {
                   />
                   Drought: <strong>{DM_LABELS[hoverDm]}</strong>
                 </>
+              )}
+            </p>
+          )}
+
+          {showProd && (
+            <p className={styles.tooltipDrought}>
+              {hoverProd ? (
+                <>🌾 {CROP_LABEL[prodCrop]}: <strong>{fmtBu(hoverProd.value)}</strong>
+                  {hoverProd.county ? ` · ${hoverProd.county} Co.` : ''}</>
+              ) : (
+                <>No {CROP_LABEL[prodCrop].toLowerCase()} production reported here</>
               )}
             </p>
           )}
@@ -624,6 +757,36 @@ function DroughtLegend({ asOf }: { asOf: Date | null }) {
           ? `USDM · valid ${asOf.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} →`
           : 'US Drought Monitor →'}
       </a>
+    </div>
+  );
+}
+
+/** Green gradient legend for the crop-production overlay. */
+function ProductionLegend({ crop, data }: { crop: ProdCrop; data: CropProductionData | null }) {
+  const label = CROP_LABEL[crop];
+  return (
+    <div style={{
+      display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '.6rem',
+      padding: '.1rem .25rem .6rem', fontFamily: 'Lato, sans-serif',
+      fontSize: '.7rem', color: '#6a7a55',
+    }}>
+      <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em' }}>
+        {label} production
+      </span>
+      <span>Less</span>
+      <div style={{ flex: '0 0 130px', height: 12, borderRadius: 3, background: 'linear-gradient(to right, #d6eebf, #165a1e)' }} />
+      <span>More</span>
+      <span style={{ marginLeft: 'auto', color: '#3d6b2a', fontWeight: 700 }}>
+        {data?.year
+          ? `USDA NASS · ${data.minYear && data.minYear !== data.year ? `${data.minYear}–${data.year}` : data.year} county production (bu)`
+          : 'USDA NASS county production'}
+      </span>
+      {crop === 'WHEAT' && (
+        <span style={{ flexBasis: '100%', color: '#a08020', fontStyle: 'italic' }}>
+          Note: this Midwest view shows winter + spring + durum wheat — the western/southern wheat belt
+          (MT, WA, OK, CO, ID, TX, OR) lies outside the map.
+        </span>
+      )}
     </div>
   );
 }

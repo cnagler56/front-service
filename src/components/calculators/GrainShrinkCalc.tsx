@@ -40,7 +40,7 @@ export default function GrainShrinkCalc() {
   }, [wetBu, wetPct, targetPct, handlingPctPerPoint]);
 
   return (
-    <CalcCard title="🌾 Grain Shrink" subtitle="Wet bushels → dry bushels after moisture + handling shrink">
+    <CalcCard title="Grain Shrink" subtitle="Wet bushels → dry bushels after moisture + handling shrink">
       <div className={styles.inputs}>
         <Field label="Wet bushels"
           value={wetBu} onChange={setWetBu} min={0} step={50} />

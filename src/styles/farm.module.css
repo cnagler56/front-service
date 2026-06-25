@@ -139,6 +139,8 @@
 }
 
 .filters .formRow { flex: 1; min-width: 120px; }
+/* Align the action button to the input baseline (override .btn's flex-start). */
+.filters .btn { align-self: flex-end; }
 
 /* ── Buttons ── */
 .btn {

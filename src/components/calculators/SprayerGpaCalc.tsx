@@ -31,7 +31,7 @@ export default function SprayerGpaCalc() {
   }, [gpm, mph, spacing, boomFt]);
 
   return (
-    <CalcCard title="💧 Sprayer GPA" subtitle="Application rate from nozzle flow and ground speed">
+    <CalcCard title="Sprayer GPA" subtitle="Application rate from nozzle flow and ground speed">
       <div className={styles.inputs}>
         <Field label="Nozzle flow (GPM per nozzle)"
           value={gpm} onChange={setGpm} min={0} step={0.05} />

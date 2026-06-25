@@ -10,7 +10,6 @@ import styles from './commodityDashboard.module.css';
 interface Props {
   commodity: 'CATTLE' | 'HOGS';
   commodityLabel: string;       // "Cattle" / "Hogs"
-  commodityIcon: string;        // "🐄" / "🐖"
   pricesGroupName: string;      // "Live Cattle" / "Lean Hogs"
   /** Default month to pull NASS inventory for. Jan=1 for cattle, Dec=12 for hogs Q4. */
   defaultMonth: string;
@@ -97,7 +96,7 @@ function summarize(rows: AnimalData[]): {
 }
 
 export default function LivestockDashboard({
-  commodity, commodityLabel, commodityIcon, pricesGroupName,
+  commodity, commodityLabel, pricesGroupName,
   defaultMonth, inventoryDescription, extraPricesGroupName,
 }: Props) {
   const { user } = useUser();
@@ -166,72 +165,33 @@ export default function LivestockDashboard({
     return <p className={styles.error}>{error}</p>;
   }
 
-  return (
-    <div className={styles.dashboard}>
-      {/* ── Hero ─────────────────────────────────────────────── */}
-      <div className={styles.heroHeader}>
-        <h1>
-          <span className={styles.heroIcon}>{commodityIcon}</span>
-          {commodityLabel} Dashboard
-        </h1>
-        <p>{inventoryDescription}</p>
-      </div>
+  const isCattle = commodity === 'CATTLE';
 
-      {/* ── Futures ──────────────────────────────────────────── */}
-      <div className={styles.section}>
-        <div className={styles.sectionHead}>
-          <span>📈</span>
-          <h2>Futures</h2>
-          <Link href="/home" className={styles.headLink}>All commodities →</Link>
-        </div>
-        <div className={styles.priceStrip}>
-          {!frontPrice ? (
-            <p className={styles.empty}>Price unavailable.</p>
-          ) : (
-            <>
-              <div className={styles.frontPrice}>
-                <div className={styles.frontLabel}>{frontPrice.expiration} (front)</div>
-                <div className={styles.frontValue}>
-                  {fmtPrice(frontPrice.last)} <span className={styles.unitLabel}>{prices?.unit}</span>
-                </div>
-                <ChangePill change={frontPrice.change ?? null} pct={frontPrice.changePercent ?? null} />
-                {frontPrice.asOf && (
-                  <div style={{ fontFamily: 'Lato, sans-serif', fontSize: '.68rem', color: '#8aa06a', marginTop: '.3rem' }}>
-                    {fmtAsOf(frontPrice.asOf)} · ~10-min delayed
-                  </div>
-                )}
-              </div>
-              <div className={styles.deferredTable}>
-                {(prices?.contracts ?? []).slice(1).map(c => (
-                  <div key={c.symbol} className={styles.deferredRow}>
-                    <span className={styles.deferredExp}>{c.expiration}</span>
-                    <span className={styles.deferredLast}>{fmtPrice(c.last)}</span>
-                    <ChangePill compact change={c.change ?? null} pct={null} />
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
+  const futuresSection = (
+    <div className={styles.section}>
+      <div className={styles.sectionHead}>
+        <h2>Futures</h2>
+        <Link href="/home" className={styles.headLink}>All commodities →</Link>
       </div>
-
-      {/* ── Secondary futures (e.g. Feeder Cattle) ───────────── */}
-      {extraPrices?.contracts?.[0] && (
-        <div className={styles.section}>
-          <div className={styles.sectionHead}>
-            <span>🐄</span>
-            <h2>{extraPrices.name} Futures</h2>
-          </div>
-          <div className={styles.priceStrip}>
+      <div className={styles.priceStrip}>
+        {!frontPrice ? (
+          <p className={styles.empty}>Price unavailable.</p>
+        ) : (
+          <>
             <div className={styles.frontPrice}>
-              <div className={styles.frontLabel}>{extraPrices.contracts[0].expiration} (front)</div>
+              <div className={styles.frontLabel}>{frontPrice.expiration} (front)</div>
               <div className={styles.frontValue}>
-                {fmtPrice(extraPrices.contracts[0].last)} <span className={styles.unitLabel}>{extraPrices.unit}</span>
+                {fmtPrice(frontPrice.last)} <span className={styles.unitLabel}>{prices?.unit}</span>
               </div>
-              <ChangePill change={extraPrices.contracts[0].change ?? null} pct={extraPrices.contracts[0].changePercent ?? null} />
+              <ChangePill change={frontPrice.change ?? null} pct={frontPrice.changePercent ?? null} />
+              {frontPrice.asOf && (
+                <div style={{ fontFamily: 'Lato, sans-serif', fontSize: '.68rem', color: '#8aa06a', marginTop: '.3rem' }}>
+                  {fmtAsOf(frontPrice.asOf)} · ~10-min delayed
+                </div>
+              )}
             </div>
             <div className={styles.deferredTable}>
-              {extraPrices.contracts.slice(1).map(c => (
+              {(prices?.contracts ?? []).slice(1).map(c => (
                 <div key={c.symbol} className={styles.deferredRow}>
                   <span className={styles.deferredExp}>{c.expiration}</span>
                   <span className={styles.deferredLast}>{fmtPrice(c.last)}</span>
@@ -239,58 +199,122 @@ export default function LivestockDashboard({
                 </div>
               ))}
             </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+
+  const cotPanel = (
+    <CotPanel commodity={isCattle ? 'LIVE_CATTLE' : 'LEAN_HOGS'} commodityLabel={commodityLabel} />
+  );
+
+  const feederSection = extraPrices?.contracts?.[0] ? (
+    <div className={styles.section}>
+      <div className={styles.sectionHead}>
+        <h2>{extraPrices.name} Futures</h2>
+      </div>
+      <div className={styles.priceStrip}>
+        <div className={styles.frontPrice}>
+          <div className={styles.frontLabel}>{extraPrices.contracts[0].expiration} (front)</div>
+          <div className={styles.frontValue}>
+            {fmtPrice(extraPrices.contracts[0].last)} <span className={styles.unitLabel}>{extraPrices.unit}</span>
+          </div>
+          <ChangePill change={extraPrices.contracts[0].change ?? null} pct={extraPrices.contracts[0].changePercent ?? null} />
+        </div>
+        <div className={styles.deferredTable}>
+          {extraPrices.contracts.slice(1).map(c => (
+            <div key={c.symbol} className={styles.deferredRow}>
+              <span className={styles.deferredExp}>{c.expiration}</span>
+              <span className={styles.deferredLast}>{fmtPrice(c.last)}</span>
+              <ChangePill compact change={c.change ?? null} pct={null} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  ) : null;
+
+  const marqueeSection = headline && (headline.value != null || headline.all != null) ? (
+    <div className={styles.section}>
+      <div className={styles.sectionHead}>
+        <div>
+          <h2 style={{ margin: 0 }}>{headline.report}</h2>
+          <div style={{
+            fontFamily: 'Lato, sans-serif', fontSize: '.64rem', fontWeight: 700,
+            textTransform: 'uppercase', letterSpacing: '.05em', color: '#8aa06a', marginTop: '1px',
+          }}>
+            USDA NASS
           </div>
         </div>
-      )}
+        {headline.period && (
+          <span style={{ marginLeft: 'auto', fontSize: '.72rem', color: '#8aa06a', fontFamily: 'Lato, sans-serif' }}>
+            {periodShort(headline.period)}{headline.year ? ` ${headline.year}` : ''}
+          </span>
+        )}
+      </div>
+      <div className={styles.statGrid}>
+        {isCattle ? (
+          <>
+            <Stat label="On Feed (1,000+ head lots)" value={fmtNum(headline.value, 0)} unit="head" big />
+            <Stat
+              label="YoY"
+              value={headline.yoyPct != null ? `${headline.yoyPct > 0 ? '+' : ''}${headline.yoyPct}%` : '—'}
+              tone={headline.yoyPct != null ? (headline.yoyPct > 0 ? 'up' : headline.yoyPct < 0 ? 'down' : undefined) : undefined}
+            />
+          </>
+        ) : (
+          <>
+            <Stat label="All Hogs" value={fmtNum(headline.all, 0)} unit="head" big />
+            <Stat label="Breeding Herd" value={fmtNum(headline.breeding, 0)} unit="head" />
+            <Stat label="Market Hogs" value={fmtNum(headline.market, 0)} unit="head" />
+            <Stat
+              label="YoY (all hogs)"
+              value={headline.yoyPct != null ? `${headline.yoyPct > 0 ? '+' : ''}${headline.yoyPct}%` : '—'}
+              tone={headline.yoyPct != null ? (headline.yoyPct > 0 ? 'up' : headline.yoyPct < 0 ? 'down' : undefined) : undefined}
+            />
+          </>
+        )}
+      </div>
+    </div>
+  ) : null;
 
-      {/* ── Managed Money (CFTC Commitments of Traders) ──────── */}
-      <CotPanel
-        commodity={commodity === 'CATTLE' ? 'LIVE_CATTLE' : 'LEAN_HOGS'}
-        commodityLabel={commodityLabel}
-      />
+  return (
+    <div className={styles.dashboard}>
+      {/* ── Hero ─────────────────────────────────────────────── */}
+      <div className={styles.heroHeader}>
+        <h1>
+          {commodityLabel} Dashboard
+        </h1>
+        <p>{inventoryDescription}</p>
+      </div>
 
-      {/* ── Marquee NASS report: Cattle on Feed / Hogs & Pigs ── */}
-      {headline && (headline.value != null || headline.all != null) && (
-        <div className={styles.section}>
-          <div className={styles.sectionHead}>
-            <span>{commodity === 'CATTLE' ? '🐂' : '🐷'}</span>
-            <h2>{headline.report}</h2>
-            {headline.period && (
-              <span style={{ marginLeft: 'auto', fontSize: '.72rem', color: '#8aa06a', fontFamily: 'Lato, sans-serif' }}>
-                USDA NASS · {periodShort(headline.period)}{headline.year ? ` ${headline.year}` : ''}
-              </span>
-            )}
+      {/* Cattle: Futures + Feeder share row 1; Cattle on Feed + Managed Money share row 2. */}
+      {isCattle ? (
+        <>
+          <div className={styles.bentoRow}>
+            {futuresSection}
+            {feederSection}
           </div>
-          <div className={styles.statGrid}>
-            {commodity === 'CATTLE' ? (
-              <>
-                <Stat label="On Feed (1,000+ head lots)" value={fmtNum(headline.value, 0)} unit="head" big />
-                <Stat
-                  label="YoY"
-                  value={headline.yoyPct != null ? `${headline.yoyPct > 0 ? '+' : ''}${headline.yoyPct}%` : '—'}
-                  tone={headline.yoyPct != null ? (headline.yoyPct > 0 ? 'up' : headline.yoyPct < 0 ? 'down' : undefined) : undefined}
-                />
-              </>
-            ) : (
-              <>
-                <Stat label="All Hogs" value={fmtNum(headline.all, 0)} unit="head" big />
-                <Stat label="Breeding Herd" value={fmtNum(headline.breeding, 0)} unit="head" />
-                <Stat label="Market Hogs" value={fmtNum(headline.market, 0)} unit="head" />
-                <Stat
-                  label="YoY (all hogs)"
-                  value={headline.yoyPct != null ? `${headline.yoyPct > 0 ? '+' : ''}${headline.yoyPct}%` : '—'}
-                  tone={headline.yoyPct != null ? (headline.yoyPct > 0 ? 'up' : headline.yoyPct < 0 ? 'down' : undefined) : undefined}
-                />
-              </>
-            )}
+          <div className={styles.bentoRow}>
+            {marqueeSection}
+            {cotPanel}
           </div>
-        </div>
+        </>
+      ) : (
+        <>
+          <div className={styles.bentoRow}>
+            {futuresSection}
+            {cotPanel}
+          </div>
+          {marqueeSection}
+        </>
       )}
 
       {/* ── Top producing states ─────────────────────────────── */}
       <div className={styles.section}>
         <div className={styles.sectionHead}>
-          <span>📊</span>
+          
           <h2>Top 5 States by Inventory</h2>
           <Link href="/usda-reports" className={styles.headLink}>Drill down →</Link>
         </div>
@@ -326,7 +350,7 @@ export default function LivestockDashboard({
       <div className={styles.linkGrid}>
         <QuickLink href="/usda-reports" icon="🏛️" title="USDA Reports"
           desc={`Full ${commodityLabel.toLowerCase()} inventory pivot tables by category.`} />
-        <QuickLink href="/usda" icon="📑" title="USDA Yield Lookup"
+        <QuickLink href="/usda-reports?report=NASS_YIELD" icon="📑" title="USDA Yield Lookup"
           desc="Historical NASS data across all commodities." />
         <QuickLink href="/forecast-change" icon="📈" title="Forecast Change"
           desc="Track how weather forecasts shift between refreshes." />

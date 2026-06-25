@@ -18,7 +18,7 @@ export default function ForecastMapPage() {
       <div className={styles.section}>
         <div className={styles.sectionHeadRow}>
           <div className={styles.titleGroup}>
-            <span>🗺️</span>
+            
             <h2>Forecast Map</h2>
           </div>
           <Link href="/forecast-change" className={styles.headerBtn}>

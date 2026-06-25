@@ -49,7 +49,7 @@ export default function FeedbackInboxPage() {
     return (
       <div className={styles.page}>
         <div className={styles.section} style={{ maxWidth: 560, margin: '0 auto' }}>
-          <div className={styles.sectionHead}><span>🔒</span><h2>Admins Only</h2></div>
+          <div className={styles.sectionHead}><h2>Admins Only</h2></div>
           <div className={styles.sectionBody}>
             <p className={styles.empty} style={{ margin: 0 }}>
               This page is restricted. Head back to the{' '}
@@ -65,7 +65,7 @@ export default function FeedbackInboxPage() {
     <div className={styles.page}>
       <div className={styles.section}>
         <div className={styles.sectionHead}>
-          <span>📬</span>
+          
           <h2>Feedback Inbox</h2>
           {rows && rows.length > 0 && (
             <span style={{

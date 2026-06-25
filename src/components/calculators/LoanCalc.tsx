@@ -35,7 +35,7 @@ export default function LoanCalc() {
     '$' + n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
-    <CalcCard title="💵 Loan Amortization" subtitle="Monthly payment and total interest on a fixed-rate loan">
+    <CalcCard title="Loan Amortization" subtitle="Monthly payment and total interest on a fixed-rate loan">
       <div className={styles.inputs}>
         <Field label="Loan amount ($)"
           value={principal} onChange={setPrincipal} min={0} step={1000} />

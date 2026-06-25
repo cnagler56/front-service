@@ -9,7 +9,6 @@ export default function CattlePage() {
       <LivestockDashboard
         commodity="CATTLE"
         commodityLabel="Cattle"
-        commodityIcon="🐄"
         pricesGroupName="Live Cattle"
         defaultMonth="1"   // Jan 1 — annual Cattle Inventory
         inventoryDescription="Live + Feeder Cattle futures, CFTC positioning, monthly Cattle on Feed, and the NASS inventory snapshot."

@@ -28,7 +28,7 @@ export default function AuthRequired({ feature = 'this feature', children }: Pro
     <div className={styles.page}>
       <div className={styles.section} style={{ maxWidth: 460, margin: '3rem auto', textAlign: 'center' }}>
         <div className={styles.sectionHead}>
-          <span>🔒</span>
+          
           <h2>Sign in to continue</h2>
         </div>
         <div className={styles.sectionBody}>

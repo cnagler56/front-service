@@ -23,6 +23,20 @@
   border: 1px solid #ddd8cc;
 }
 
+/* Two narrow sections (Latest News + Upcoming Reports) side by side. */
+.sideBySide {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: stretch;
+  margin-bottom: 2rem;
+}
+.sideBySide > * { margin-bottom: 0; }
+.sideBySide .farmSection { margin-bottom: 0; height: 100%; }
+@media (max-width: 880px) {
+  .sideBySide { grid-template-columns: 1fr; }
+}
+
 .farmSectionHeader {
   background: linear-gradient(135deg, #2c4a1e, #3d6b2a);
   padding: 0.85rem 1.5rem;

@@ -8,14 +8,13 @@ import styles from '@/src/styles/farm.module.css';
 interface ChallengeCommodity {
   key: string;
   label: string;
-  icon: string;
   unit: string;
 }
 
 const COMMODITIES: ChallengeCommodity[] = [
-  { key: 'CORN',     label: 'Corn',     icon: '🌽', unit: 'bu/acre' },
-  { key: 'SOYBEANS', label: 'Soybeans', icon: '🫘', unit: 'bu/acre' },
-  { key: 'WHEAT',    label: 'Wheat',    icon: '🌾', unit: 'bu/acre' },
+  { key: 'CORN',     label: 'Corn',     unit: 'bu/acre' },
+  { key: 'SOYBEANS', label: 'Soybeans', unit: 'bu/acre' },
+  { key: 'WHEAT',    label: 'Wheat',    unit: 'bu/acre' },
 ];
 
 /**
@@ -45,7 +44,7 @@ export default function UsdaChallengePage() {
           fontFamily: 'Playfair Display, Georgia, serif',
           fontSize: '1.7rem', margin: '0 0 .4rem', letterSpacing: '.02em',
         }}>
-          🏆 The USDA Yield Challenge
+          The USDA Yield Challenge
         </h1>
         <p style={{
           fontFamily: 'Lato, sans-serif', fontSize: '.95rem', lineHeight: 1.6,
@@ -61,14 +60,14 @@ export default function UsdaChallengePage() {
           <Step n="1" title="Tune the states"
             desc="Adjust each state's yield. Your national number recalculates instantly, weighted by harvested acres." />
           <Step n="2" title="Lock in your guess"
-            desc="Submit your national estimate with your name and state." />
+            desc="Submit your national estimate — and update it anytime new information changes your opinion." />
           <Step n="3" title="Beat the crowd"
             desc="Watch the community average form and see who's closest to USDA." />
         </div>
 
         <p style={{ fontFamily: 'Lato, sans-serif', fontSize: '.82rem', margin: '1rem 0 0' }}>
           <Link href="/usda-results" style={{ color: '#a8cc78', fontWeight: 700 }}>
-            🏅 See the results leaderboards →
+            See the results leaderboards →
           </Link>
         </p>
       </div>
@@ -83,7 +82,7 @@ export default function UsdaChallengePage() {
             className={`${styles.filterPill} ${commodity.key === c.key ? styles.filterPillActive : ''}`}
             style={{ fontWeight: 700, fontSize: '.95rem', padding: '.5rem 1rem' }}
           >
-            {c.icon} {c.label}
+            {c.label}
           </button>
         ))}
       </div>

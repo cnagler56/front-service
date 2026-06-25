@@ -218,7 +218,45 @@ export const NavigationBar = () => {
             <Link href="/wheat">Wheat</Link>
           </li>
           <li>
+            <Link href="/cotton">Cotton</Link>
+          </li>
+          <li>
             <Link href="/ethanol">Ethanol</Link>
+          </li>
+          <li>
+            <Link href="/energy">Energy</Link>
+          </li>
+          <li className="has-dropdown">
+            <span className="dropdown-toggle" role="button" tabIndex={0} aria-haspopup="true">
+              South America <span aria-hidden="true">▾</span>
+            </span>
+            <ul className="dropdown">
+              <li>
+                <Link href="/south-america/corn">Corn</Link>
+              </li>
+              <li>
+                <Link href="/south-america/soybeans">Soybeans</Link>
+              </li>
+            </ul>
+          </li>
+          <li className="has-dropdown">
+            <span className="dropdown-toggle" role="button" tabIndex={0} aria-haspopup="true">
+              Canada <span aria-hidden="true">▾</span>
+            </span>
+            <ul className="dropdown">
+              <li>
+                <Link href="/canada/canola">Canola</Link>
+              </li>
+              <li>
+                <Link href="/canada/wheat">Wheat</Link>
+              </li>
+              <li>
+                <Link href="/canada/corn">Corn</Link>
+              </li>
+              <li>
+                <Link href="/canada/soybeans">Soybeans</Link>
+              </li>
+            </ul>
           </li>
           <li>
             <Link href="/usda-reports">USDA Reports</Link>
@@ -231,9 +269,6 @@ export const NavigationBar = () => {
           </li>
           <li>
             <Link href="/buysell">Buy / Sell</Link>
-          </li>
-          <li>
-            <Link href="/usda">USDA</Link>
           </li>
           <li>
             <Link href="/cropprogress">Crop Progress</Link>

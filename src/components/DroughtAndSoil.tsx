@@ -85,7 +85,6 @@ export default function DroughtAndSoil({ lat, lon, locationLabel }: Props) {
   return (
     <div className={styles.section} style={{ overflow: 'visible', flex: 1, margin: 0, display: 'flex', flexDirection: 'column' }}>
       <div className={styles.sectionHead}>
-        <span>🛰️</span>
         <h2>Soil Moisture</h2>
       </div>
       <div className={styles.sectionBody} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>

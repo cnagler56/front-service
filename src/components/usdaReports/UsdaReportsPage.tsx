@@ -10,8 +10,11 @@ import ActiveReportPanel from './ActiveReportPanel';
  * /usda-reports top — owns which tab is active and renders the description
  * for the active report. Tab + panel rendering is delegated.
  */
-export default function UsdaReportsPage() {
-  const [activeKey, setActiveKey] = useState<ReportKey>('CORN_PLANTING');
+export default function UsdaReportsPage({ initialReport }: { initialReport?: string }) {
+  const validInitial = REPORTS.some(r => r.value === initialReport)
+    ? (initialReport as ReportKey)
+    : 'PLANTED_ACRES';
+  const [activeKey, setActiveKey] = useState<ReportKey>(validInitial);
   const active = REPORTS.find(r => r.value === activeKey)!;
 
   return (
@@ -20,8 +23,7 @@ export default function UsdaReportsPage() {
         <h1 style={{
           fontFamily: 'Playfair Display, Georgia, serif',
           fontSize: '1.45rem', color: '#2c4a1e', margin: '0 0 .35rem',
-        }}>
-          🏛️ USDA Reports
+        }}>USDA Reports
         </h1>
         <p style={{
           fontFamily: 'Lato, sans-serif', color: '#666', fontSize: '.875rem',
