@@ -297,7 +297,6 @@ export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 
       {/* LEFT: state table */}
       <div className={styles.section}>
         <div className={styles.sectionHead}>
-          <span>📊</span>
           <h2>{commodityLabel} — Yield by State</h2>
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '.6rem' }}>
             {editedCount > 0 && (
@@ -316,7 +315,7 @@ export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 
             )}
             <span style={{ color: '#a8cc78', fontSize: '.75rem', fontFamily: 'Lato, sans-serif', whiteSpace: 'nowrap' }}>
               {editedCount > 0
-                ? `${editedCount} edited · saved ✓`
+                ? `${editedCount} edited · saved`
                 : 'Edit any row to adjust your estimate'}
             </span>
           </div>
@@ -404,7 +403,6 @@ export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 
         {/* Submit form */}
         <div className={styles.section}>
           <div className={styles.sectionHead}>
-            <span>✏️</span>
             <h2>Lock In Your Guess</h2>
           </div>
           <div className={styles.sectionBody}>
@@ -473,8 +471,8 @@ export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 
                 {submitting
                   ? 'Submitting…'
                   : alreadyGuessed
-                    ? `✏️ Update My ${commodityLabel} Estimate`
-                    : `✏️ Submit My ${commodityLabel} Estimate`}
+                    ? `Update My ${commodityLabel} Estimate`
+                    : `Submit My ${commodityLabel} Estimate`}
               </button>
             </form>
             )}
@@ -484,7 +482,6 @@ export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 
         {/* Community */}
         <div className={styles.section}>
           <div className={styles.sectionHead}>
-            <span>👥</span>
             <h2>Community Guesses</h2>
             {guesses.length > 0 && (
               <span style={{
@@ -520,35 +517,55 @@ export default function YieldEstimatorPanel({ commodity, commodityLabel, unit = 
               guesses.map((g, i) => {
                 const open = g.userId != null && expanded === g.userId;
                 const log = g.userId != null ? history[g.userId] : undefined;
+                // Badge wording/colors reflect which way they moved their estimate.
+                const badge = !g.updated ? null
+                  : g.direction === 'up'
+                    ? { label: 'Raised estimate', fg: '#1a7f37', bg: '#e6f4ea', bd: '#b7e0c2' }
+                    : g.direction === 'down'
+                      ? { label: 'Lowered estimate', fg: '#b42318', bg: '#fbe9e7', bd: '#f0c2bb' }
+                      : { label: 'Updated', fg: '#7a5c00', bg: '#fdf1c9', bd: '#ecd98a' };
                 return (
                   <div key={g.latestId ?? i}>
                     <div className={styles.guessCard}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div className={styles.guessName}>
                           {g.name || 'Anonymous'}
-                          {g.updated && (
+                          {badge && (
                             <span
                               title={`Updated ${g.revisions - 1} time${g.revisions - 1 !== 1 ? 's' : ''}`}
                               style={{
                                 marginLeft: '.4rem', fontSize: '.62rem', fontWeight: 700,
-                                color: '#7a5c00', background: '#fdf1c9', border: '1px solid #ecd98a',
+                                color: badge.fg, background: badge.bg, border: `1px solid ${badge.bd}`,
                                 borderRadius: 10, padding: '0 .4rem', verticalAlign: 'middle',
                                 fontFamily: 'Lato, sans-serif', textTransform: 'uppercase', letterSpacing: '.03em',
                               }}
                             >
-                              updated
+                              {badge.label}
                             </span>
                           )}
                         </div>
                         <div className={styles.guessMeta}>
                           {[g.state, g.interest].filter(Boolean).join(' · ')}
                         </div>
-                        {g.updated && g.note && (
+                        {g.updated && g.note && badge && (
                           <div style={{
-                            fontFamily: 'Lato, sans-serif', fontSize: '.72rem', color: '#666',
-                            fontStyle: 'italic', marginTop: '.2rem',
+                            marginTop: '.4rem',
+                            background: badge.bg,
+                            border: `1px solid ${badge.bd}`,
+                            borderLeft: `4px solid ${badge.fg}`,
+                            borderRadius: 6,
+                            padding: '.45rem .7rem',
+                            fontFamily: 'Lato, sans-serif',
                           }}>
-                            “{g.note}”
+                            <div style={{
+                              fontSize: '.6rem', fontWeight: 700, textTransform: 'uppercase',
+                              letterSpacing: '.05em', color: badge.fg, marginBottom: '.2rem',
+                            }}>
+                              Why they changed
+                            </div>
+                            <div style={{ fontSize: '.9rem', color: '#33402a', lineHeight: 1.45 }}>
+                              “{g.note}”
+                            </div>
                           </div>
                         )}
                         {g.updated && (

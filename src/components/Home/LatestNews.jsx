@@ -9,7 +9,7 @@ import styles from "./Home.module.css";
  * pull (WASDE, weekly ethanol, ENSO, notable price moves). Each item rolls off
  * ~3 days after it appears (the server applies the window). Newest first.
  */
-const LatestNews = () => {
+const LatestNews = ({ maxHeight }) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -23,12 +23,17 @@ const LatestNews = () => {
   }, []);
 
   return (
-    <section className={styles.farmSection}>
+    <section
+      className={styles.farmSection}
+      style={maxHeight ? { maxHeight, display: 'flex', flexDirection: 'column' } : undefined}
+    >
       <div className={styles.farmSectionHeader}>
-        <span className={styles.sectionIcon}>📰</span>
         <h2>Latest News</h2>
       </div>
-      <div className={`${styles.farmSectionBody} ${styles.farmSectionBodyWarm}`} style={{ display: 'block', padding: '0.5rem 0' }}>
+      <div
+        className={`${styles.farmSectionBody} ${styles.farmSectionBodyWarm}`}
+        style={{ display: 'block', padding: '0.5rem 0', flex: 1, minHeight: 0, overflowY: 'auto' }}
+      >
         {loading ? (
           <p style={{ color: '#888', fontStyle: 'italic', textAlign: 'center', padding: '1.5rem' }}>
             Loading the latest…
@@ -50,6 +55,14 @@ const LatestNews = () => {
   );
 };
 
+/** ISO timestamp → "Jun 23" (the date the item was released / first appeared). */
+function fmtDay(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
 function NewsRow({ item, last }) {
   const inner = (
     <div
@@ -62,23 +75,24 @@ function NewsRow({ item, last }) {
       onMouseEnter={e => { e.currentTarget.style.background = 'rgba(143,188,69,0.10)'; }}
       onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
     >
-      <span style={{ fontSize: '1.25rem', lineHeight: 1.2, flex: '0 0 auto' }}>{item.icon || '•'}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontFamily: 'Lato, sans-serif', fontWeight: 700, fontSize: '.9rem', color: '#2c4a1e', lineHeight: 1.3 }}>
           {item.headline}
         </div>
-        {item.detail && (
+        {(item.detail || item.eventDate) && (
           <div style={{ fontFamily: 'Lato, sans-serif', fontSize: '.78rem', color: '#7a7060', marginTop: '.15rem' }}>
             {item.detail}
+            {item.detail && item.eventDate ? ' · ' : ''}
+            {item.eventDate && <span style={{ color: '#a09684' }}>for {item.eventDate}</span>}
           </div>
         )}
       </div>
-      {item.eventDate && (
+      {item.createdAt && (
         <span style={{
-          flex: '0 0 auto', fontFamily: 'Lato, sans-serif', fontSize: '.68rem',
+          flex: '0 0 auto', fontFamily: 'Lato, sans-serif', fontSize: '.68rem', fontWeight: 700,
           color: '#a09684', whiteSpace: 'nowrap', marginTop: '.15rem',
         }}>
-          {item.eventDate}
+          {fmtDay(item.createdAt)}
         </span>
       )}
     </div>

@@ -78,7 +78,7 @@ export default function ForecastDiffCard({ location, onEdit, onDelete }: Props) 
     <div className={styles.locCard}>
       <div className={styles.locHead}>
         <div>
-          <h3 className={styles.locName}>📍 {location.name}</h3>
+          <h3 className={styles.locName}>{location.name}</h3>
           <p className={styles.locMeta}>
             Current: <strong>{fmtTs(location.currentFetchedAt)}</strong>
             {previous && (

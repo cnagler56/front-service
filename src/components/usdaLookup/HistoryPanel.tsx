@@ -129,7 +129,7 @@ export default function HistoryPanel({ grain }: Props) {
   return (
     <div className={styles.section}>
       <div className={styles.sectionHead}>
-        <span>📊</span>
+        
         <h2>{grain} Yield History</h2>
       </div>
       <div className={styles.sectionBody}>

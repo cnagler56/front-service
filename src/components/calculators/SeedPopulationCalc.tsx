@@ -34,7 +34,7 @@ export default function SeedPopulationCalc() {
   }, [finalStand, germ, emerge, spacing]);
 
   return (
-    <CalcCard title="🌱 Seed Population" subtitle="Seeding rate and seeds per row-foot">
+    <CalcCard title="Seed Population" subtitle="Seeding rate and seeds per row-foot">
       <div className={styles.inputs}>
         <Field label="Target final stand (plants/acre)"
           value={finalStand} onChange={setFinalStand} min={0} step={1000} />

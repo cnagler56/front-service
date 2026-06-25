@@ -1,0 +1,121 @@
+/* Card-style layout for the USDA reports (livestock inventory, planted acres) —
+   narrow cards that flow into a responsive grid instead of stacked full-width
+   government tables. */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.1rem;
+  align-items: start;
+  margin-top: 1rem;
+}
+
+/* Centered variant — cards keep a capped width and the whole set is centered
+   horizontally (used where there are only a few cards, e.g. the 3 crops). */
+.gridCenter {
+  grid-template-columns: repeat(auto-fit, minmax(320px, 360px));
+  justify-content: center;
+}
+
+.card {
+  border: 1px solid #dde5cd;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(44, 74, 30, 0.07);
+  font-family: 'Lato', sans-serif;
+}
+
+.cardHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .6rem;
+  padding: .65rem .9rem;
+  background: linear-gradient(180deg, #f4f8ec 0%, #e8f0d7 100%);
+  border-bottom: 1px solid #dde5cd;
+}
+
+.cardTitle {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: .96rem;
+  font-weight: 700;
+  color: #2c4a1e;
+  margin: 0;
+  line-height: 1.25;
+}
+
+.count {
+  font-size: .66rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: #8a9a6f;
+  white-space: nowrap;
+}
+
+/* Cap the body at ~15 states, then scroll; the column header stays pinned. */
+.scroll {
+  max-height: 25rem;
+  overflow-y: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .82rem;
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f6f9ef;
+  text-align: left;
+  font-size: .63rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #97a67e;
+  font-weight: 700;
+  padding: .45rem .9rem .4rem;
+  border-bottom: 1px solid #ebf0e0;
+}
+.table th.num { text-align: right; }
+
+.table td {
+  padding: .36rem .9rem;
+  color: #3c4633;
+  border: none;
+}
+.table td.num {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: #2c4a1e;
+  font-weight: 600;
+}
+
+/* Year-over-year change cell. */
+.table td.yoy {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+.table th.yoy { text-align: right; }
+.up   { color: #2f7d32; }
+.down { color: #c0392b; }
+
+.table tbody tr:nth-child(even) { background: #faf9f3; }
+.table tbody tr:hover { background: #eef4e0; }
+
+.userRow { background: rgba(143, 188, 69, 0.18) !important; }
+.userRow td:first-child { font-weight: 700; color: #2c4a1e; }
+
+/* Per-card empty / loading note. */
+.cardNote {
+  padding: 1rem .9rem;
+  font-size: .8rem;
+  color: #8a8a7a;
+  font-style: italic;
+}

@@ -4,16 +4,64 @@ import { useEffect, useMemo, useState, Fragment } from 'react';
 import { api, SupplyDemandSheet, SupplyDemandRow } from '@/src/lib/api';
 import styles from './commodityDashboard.module.css';
 
+interface RegionOption {
+  key: string;              // matches a key in SupplyDemandSheet.regions, e.g. "US"
+  label: string;            // toggle button text, e.g. "U.S."
+}
+
 interface Props {
   commodity: string;        // "CORN" / "SOYBEANS" / "WHEAT"
   commodityLabel: string;
+  /** Which region balance sheets to offer; defaults to U.S. / World. */
+  regions?: RegionOption[];
 }
 
-type Region = 'US' | 'WORLD';
+const DEFAULT_REGIONS: RegionOption[] = [
+  { key: 'US', label: 'U.S.' },
+  { key: 'WORLD', label: 'World' },
+];
 
 /** 2025 → "2025/26". */
 function yearLabel(y: number): string {
   return `${y}/${String((y + 1) % 100).padStart(2, '0')}`;
+}
+
+/** Bushels per metric ton by crop (corn 56 lb/bu, soybeans & wheat 60 lb/bu). */
+const BU_PER_MT: Record<string, number> = { CORN: 39.3680, SOYBEANS: 36.7437, WHEAT: 36.7437 };
+const ACRES_PER_HA = 2.47105;
+
+/** localStorage key remembering the metric→bushels preference across visits. */
+const BUSHELS_KEY = 'supplyDemand:bushels';
+function loadBushelsPref(): boolean {
+  if (typeof window === 'undefined') return false;
+  try { return window.localStorage.getItem(BUSHELS_KEY) === '1'; } catch { return false; }
+}
+
+/** Can this row's metric unit be converted to a US (bushel/acre) unit? */
+function isConvertible(unit: string): boolean {
+  const u = unit.toLowerCase();
+  return u.includes('metric ton') || u.includes('tonne') || /\bmt\b/.test(u) || u.includes('hectare');
+}
+
+/** Return a copy of the row with values converted to bushels/acres, or the row unchanged. */
+function toBushels(row: SupplyDemandRow, buPerMt: number): SupplyDemandRow {
+  const u = row.unit.toLowerCase();
+  const scale = (factor: number, unit: string): SupplyDemandRow => ({
+    ...row,
+    unit,
+    values: row.values.map(v => (v == null ? null : +(v * factor).toFixed(2))),
+    prev: row.prev == null ? null : +(row.prev * factor).toFixed(2),
+  });
+  // Yield (tons per hectare) → bushels per acre
+  if ((u.includes('ton') || /\bmt\b/.test(u)) && (u.includes('hectare') || u.includes('/ha') || u.includes(' per ')))
+    return scale(buPerMt / ACRES_PER_HA, 'Bushels per Acre');
+  // Area (hectares) → acres
+  if (u.includes('hectare'))
+    return scale(ACRES_PER_HA, u.includes('million') ? 'Million Acres' : 'Acres');
+  // Quantity (metric tons) → bushels
+  if (u.includes('metric ton') || u.includes('tonne') || /\bmt\b/.test(u))
+    return scale(buPerMt, u.includes('million') ? 'Million Bushels' : u.includes('1000') ? '1000 Bushels' : 'Bushels');
+  return row;
 }
 
 /** WASDE values are already in their published units; just format readably. */
@@ -70,12 +118,13 @@ function classify(attribute: string): { sec: number; idx: number } {
   return { sec: SEC_OTHER, idx: 0 };
 }
 
-export default function SupplyDemandBox({ commodity, commodityLabel }: Props) {
+export default function SupplyDemandBox({ commodity, commodityLabel, regions = DEFAULT_REGIONS }: Props) {
   const [sheet, setSheet] = useState<SupplyDemandSheet | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [region, setRegion] = useState<Region>('US');
+  const [region, setRegion] = useState<string>(regions[0].key);
   const [showChanges, setShowChanges] = useState(true);
+  const [bushels, setBushels] = useState<boolean>(loadBushelsPref);
 
   useEffect(() => {
     let cancelled = false;
@@ -88,69 +137,87 @@ export default function SupplyDemandBox({ commodity, commodityLabel }: Props) {
     return () => { cancelled = true; };
   }, [commodity]);
 
-  const rawRows = sheet ? (region === 'US' ? sheet.us : sheet.world) : [];
+  // Remember the bushels preference across visits, and broadcast so other panels
+  // on the page (e.g. the CONAB Brazil panel) stay in sync within the same tab.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try { window.localStorage.setItem(BUSHELS_KEY, bushels ? '1' : '0'); } catch { /* ignore */ }
+    window.dispatchEvent(new CustomEvent('sd-bushels', { detail: bushels }));
+  }, [bushels]);
+
+  const rawRows = sheet?.regions?.[region] ?? [];
   const years = sheet?.years ?? [];
+
+  // Bushel conversion — only for grains, and only when the current view has
+  // metric rows to convert (i.e. World / South America, not the U.S. bushel view).
+  const buPerMt = BU_PER_MT[commodity.toUpperCase()];
+  const canConvert = !!buPerMt && rawRows.some(r => isConvertible(r.unit));
+  const rows = useMemo(
+    () => (bushels && buPerMt ? rawRows.map(r => toBushels(r, buPerMt)) : rawRows),
+    [rawRows, bushels, buPerMt],
+  );
 
   // Reorder into a real balance sheet: Supply → Demand → Ending Stocks → appendix.
   const ordered = useMemo(
-    () => rawRows
+    () => rows
       .map(r => ({ r, ...classify(r.attribute) }))
       .sort((a, b) => a.sec - b.sec || a.idx - b.idx || a.r.seq - b.r.seq),
-    [rawRows],
+    [rows],
   );
 
   // Headline metrics for the newest (new-crop) marketing year.
   const metrics = useMemo(() => {
     const latest = (pred: (r: SupplyDemandRow) => boolean) => {
-      const r = rawRows.find(pred);
+      const r = rows.find(pred);
       return r ? { v: r.values[0] ?? null, unit: r.unit } : null;
     };
     const prod = latest(isProduction);
     const ending = latest(isEnding);
     const useRow =
-      rawRows.find(r => { const n = norm(r.attribute); return n.includes('usetotal') || n.includes('totaluse'); })
-      ?? rawRows.find(r => norm(r.attribute).includes('domestictotal'));
+      rows.find(r => { const n = norm(r.attribute); return n.includes('usetotal') || n.includes('totaluse'); })
+      ?? rows.find(r => norm(r.attribute).includes('domestictotal'));
     const useVal = useRow ? useRow.values[0] ?? null : null;
     const stocksToUse = ending?.v != null && useVal ? (ending.v / useVal) * 100 : null;
     return { prod, ending, stocksToUse };
-  }, [rawRows]);
+  }, [rows]);
 
   // Stocks-to-use for every year, so the trend reads across the columns.
   const stuByYear = useMemo(() => {
-    const endingRow = rawRows.find(isEnding);
+    const endingRow = rows.find(isEnding);
     const useRow =
-      rawRows.find(r => { const n = norm(r.attribute); return n.includes('usetotal') || n.includes('totaluse'); })
-      ?? rawRows.find(r => norm(r.attribute).includes('domestictotal'));
+      rows.find(r => { const n = norm(r.attribute); return n.includes('usetotal') || n.includes('totaluse'); })
+      ?? rows.find(r => norm(r.attribute).includes('domestictotal'));
     if (!endingRow || !useRow) return null;
     return years.map((_, j) => {
       const e = endingRow.values[j];
       const u = useRow.values[j];
       return e != null && u ? (e / u) * 100 : null;
     });
-  }, [rawRows, years]);
+  }, [rows, years]);
 
   const latestYear = years[0];
+  const regionLabel = regions.find(r => r.key === region)?.label ?? region;
 
   return (
     <div className={styles.section}>
       <div className={styles.sectionHead}>
-        <span>⚖️</span>
+        
         <h2>Supply &amp; Demand</h2>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '.35rem' }}>
-          {(['US', 'WORLD'] as Region[]).map(r => (
+          {regions.map(r => (
             <button
-              key={r}
+              key={r.key}
               type="button"
-              onClick={() => setRegion(r)}
+              onClick={() => setRegion(r.key)}
               style={{
                 fontFamily: 'Lato, sans-serif', fontSize: '.74rem', fontWeight: 700,
                 padding: '.25rem .8rem', borderRadius: 14, cursor: 'pointer',
-                border: '1px solid ' + (region === r ? '#3d6b2a' : '#cdd6bd'),
-                background: region === r ? '#3d6b2a' : '#fff',
-                color: region === r ? '#f0f7e6' : '#3d6b2a',
+                border: '1px solid ' + (region === r.key ? '#3d6b2a' : '#cdd6bd'),
+                background: region === r.key ? '#3d6b2a' : '#fff',
+                color: region === r.key ? '#f0f7e6' : '#3d6b2a',
               }}
             >
-              {r === 'US' ? 'U.S.' : 'World'}
+              {r.label}
             </button>
           ))}
         </div>
@@ -167,6 +234,24 @@ export default function SupplyDemandBox({ commodity, commodityLabel }: Props) {
 
         {ordered.length > 0 && (
           <>
+            {/* Prominent metric → bushels converter (grains, metric views only). */}
+            {canConvert && (
+              <button
+                type="button"
+                onClick={() => setBushels(b => !b)}
+                style={{
+                  display: 'block', width: '100%', margin: '0 0 1rem', padding: '.6rem .9rem',
+                  borderRadius: 6, cursor: 'pointer',
+                  border: '1px solid ' + (bushels ? '#cdd6bd' : '#3d6b2a'),
+                  background: bushels ? '#fff' : '#3d6b2a',
+                  color: bushels ? '#3d6b2a' : '#f0f7e6',
+                  fontFamily: 'Lato, sans-serif', fontSize: '.85rem', fontWeight: 700,
+                }}
+              >
+                {bushels ? '↩ Show metric tons (MMT)' : '🌽 Convert values to bushels'}
+              </button>
+            )}
+
             {/* Month-over-month toggle — its own line, with an explanation. */}
             <label
               style={{
@@ -228,7 +313,7 @@ export default function SupplyDemandBox({ commodity, commodityLabel }: Props) {
                 <thead>
                   <tr>
                     <th style={{ ...th(), textAlign: 'left' }}>
-                      {region === 'US' ? `U.S. ${commodityLabel}` : `World ${commodityLabel}`} Balance Sheet
+                      {regionLabel} {commodityLabel} Balance Sheet
                     </th>
                     {years.map((y, j) => (
                       <th key={y} style={{

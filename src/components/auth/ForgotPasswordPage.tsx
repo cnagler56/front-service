@@ -34,7 +34,7 @@ export default function ForgotPasswordPage() {
     <div className={styles.page}>
       <div className={styles.section} style={{ maxWidth: 460, margin: '3rem auto' }}>
         <div className={styles.sectionHead}>
-          <span>🔑</span>
+          
           <h2>Reset Your Password</h2>
         </div>
         <div className={styles.sectionBody}>

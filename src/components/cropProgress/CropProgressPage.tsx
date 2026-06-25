@@ -38,7 +38,7 @@ export default function CropProgressPage() {
       {/* Filters in a normal .section — no sticky issues from overflow:hidden */}
       <div className={styles.section}>
         <div className={styles.sectionHead}>
-          <span>🌱</span>
+          
           <h2>USDA Crop Progress</h2>
         </div>
         <div className={styles.sectionBody}>

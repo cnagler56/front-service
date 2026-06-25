@@ -16,7 +16,7 @@ export default function CalculatorsPage() {
     <div className={styles.page}>
       <div className={styles.section}>
         <div className={styles.sectionHead}>
-          <span>🧮</span>
+          
           <h2>Farm Calculators</h2>
         </div>
         <div className={styles.sectionBody}>

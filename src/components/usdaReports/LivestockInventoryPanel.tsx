@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { api, AnimalData } from '@/src/lib/api';
 import { useUser } from '@/src/lib/UserContext';
 import styles from '@/src/styles/farm.module.css';
+import card from './reportCards.module.css';
 
 /** A category bucket — each row's short_desc is tested against `matches`. */
 export interface CategoryDef {
@@ -12,10 +13,12 @@ export interface CategoryDef {
   matches: (s: string) => boolean;
 }
 
-/** Month option in the dropdown — value is what's sent to NASS, label what's displayed. */
+/** Month option in the dropdown — value is what's sent to NASS, label what's displayed.
+ *  Mark one option `default: true` to pre-select it (else the last option wins). */
 export interface MonthOption {
   value: string;
   label: string;
+  default?: boolean;
 }
 
 interface Props {
@@ -26,13 +29,40 @@ interface Props {
   months: MonthOption[];       // months NASS publishes for this report
 }
 
-/** Classify a NASS short_desc into one of our categories. Falls back to "OTHER". */
+/** Classify a NASS short_desc into one of our categories. Falls back to "OTHER".
+ *  The "ALL" entry is a UI filter pseudo-category (matches everything) — skip it
+ *  here, or every row would bucket into "ALL" and the real groups stay empty. */
 function classify(shortDesc: string, categories: CategoryDef[]): string {
   const s = (shortDesc || '').toUpperCase();
   for (const c of categories) {
+    if (c.value === 'ALL') continue;
     if (c.matches(s)) return c.value;
   }
   return 'OTHER';
+}
+
+/** A report's title is its NASS short_desc minus the redundant "- INVENTORY". */
+function reportTitle(shortDesc: string): string {
+  return (shortDesc || '').replace(' - INVENTORY', '').trim();
+}
+
+/** NASS sends ALL-CAPS state names; render them title-cased ("NORTH DAKOTA" → "North Dakota"). */
+function titleCaseState(s: string): string {
+  return (s || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
+
+/** Numeric value for sorting; withheld/NA ("(D)", "(NA)", …) sort last. */
+function parseInv(v?: string): number | null {
+  if (!v) return null;
+  const n = parseInt(v.replace(/[,\s]/g, ''), 10);
+  return isNaN(n) ? null : n;
+}
+function byInventoryDesc(a: AnimalData, b: AnimalData): number {
+  const av = parseInv(a.Value), bv = parseInv(b.Value);
+  if (av == null && bv == null) return 0;
+  if (av == null) return 1;
+  if (bv == null) return -1;
+  return bv - av;
 }
 
 /**
@@ -45,8 +75,11 @@ function classify(shortDesc: string, categories: CategoryDef[]): string {
 export default function LivestockInventoryPanel({
   commodity, commodityLabel, icon, categories, months,
 }: Props) {
-  // Use the latest month a report is published for as the default
-  const [month, setMonth]   = useState(months[months.length - 1]?.value ?? '1');
+  // Pre-select the report's most reliable recent period (the option flagged
+  // `default`), falling back to the last option.
+  const [month, setMonth]   = useState(
+    (months.find(m => m.default) ?? months[months.length - 1])?.value ?? '1'
+  );
   const [year, setYear]     = useState(new Date().getFullYear() - 1);
   const [category, setCategory] = useState<string>('ALL');
   const [data, setData]     = useState<AnimalData[]>([]);
@@ -84,27 +117,33 @@ export default function LivestockInventoryPanel({
     }
   }
 
-  // Group rows by category in the order defined in `categories`
-  const grouped = useMemo(() => {
-    return categories
-      .filter(c => c.value !== 'ALL')
-      .map(cat => ({
-        cat,
-        rows: data.filter(r => classify(r.short_desc, categories) === cat.value),
-      }))
-      .filter(g => g.rows.length > 0);
-  }, [data, categories]);
-
-  const visibleGroups = category === 'ALL'
-    ? grouped
-    : grouped.filter(g => g.cat.value === category);
+  // One report per distinct description (short_desc), honoring the category
+  // filter. Ordered by the category order, then by description.
+  const reports = useMemo(() => {
+    const catOrder = new Map(categories.map((c, i) => [c.value, i]));
+    const byDesc = new Map<string, AnimalData[]>();
+    for (const r of data) {
+      const cls = classify(r.short_desc, categories);
+      if (cls === 'OTHER') continue;
+      if (category !== 'ALL' && cls !== category) continue;
+      if (!byDesc.has(r.short_desc)) byDesc.set(r.short_desc, []);
+      byDesc.get(r.short_desc)!.push(r);
+    }
+    return Array.from(byDesc, ([description, rows]) => ({
+      description,
+      category: classify(description, categories),
+      rows: [...rows].sort(byInventoryDesc),
+    })).sort((a, b) =>
+      ((catOrder.get(a.category) ?? 99) - (catOrder.get(b.category) ?? 99)) ||
+      a.description.localeCompare(b.description)
+    );
+  }, [data, category, categories]);
 
   const userStateName = (user?.state ?? '').trim().toUpperCase();
 
   return (
     <div className={styles.section}>
       <div className={styles.sectionHead}>
-        <span>{icon}</span>
         <h2>{commodityLabel} Inventory Report</h2>
       </div>
       <div className={styles.sectionBody}>
@@ -147,53 +186,46 @@ export default function LivestockInventoryPanel({
             been issued for this month — try a different one.
           </p>
         )}
-        {fetched && data.length > 0 && visibleGroups.length === 0 && (
+        {fetched && data.length > 0 && reports.length === 0 && (
           <p className={styles.empty}>
             No rows for the selected category in this period. Try <em>All Categories</em>.
           </p>
         )}
 
-        {visibleGroups.map(group => (
-          <div key={group.cat.value} style={{ marginBottom: '2rem' }}>
-            <h3 style={{
-              fontFamily: 'Playfair Display, Georgia, serif',
-              color: '#2c4a1e',
-              fontSize: '1.1rem',
-              margin: '0 0 .35rem',
-              borderBottom: '2px solid #c9dfa3',
-              paddingBottom: '.35rem',
-            }}>
-              {group.cat.label}
-              <span style={{ color: '#888', fontSize: '.75rem', fontWeight: 400, marginLeft: '.5rem' }}>
-                ({group.rows.length} row{group.rows.length === 1 ? '' : 's'})
-              </span>
-            </h3>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Description</th>
-                  <th>State</th>
-                  <th>Inventory</th>
-                </tr>
-              </thead>
-              <tbody>
-                {group.rows.map((row, i) => {
-                  const isUserState = userStateName &&
-                    (row.location_desc ?? '').toUpperCase() === userStateName;
-                  return (
-                    <tr key={i} style={isUserState ? { background: 'rgba(143, 188, 69, 0.12)' } : {}}>
-                      <td>{row.short_desc}</td>
-                      <td style={{ fontWeight: isUserState ? 700 : 400 }}>
-                        {row.location_desc}{isUserState ? ' ⭐' : ''}
-                      </td>
-                      <td>{row.Value}</td>
+        <div className={card.grid}>
+          {reports.map(report => (
+            <div key={report.description} className={card.card}>
+              <div className={card.cardHead}>
+                <h3 className={card.cardTitle}>{reportTitle(report.description)}</h3>
+                <span className={card.count}>
+                  {report.rows.length} state{report.rows.length === 1 ? '' : 's'}
+                </span>
+              </div>
+              <div className={card.scroll}>
+                <table className={card.table}>
+                  <thead>
+                    <tr>
+                      <th>State</th>
+                      <th className={card.num}>Inventory</th>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ))}
+                  </thead>
+                  <tbody>
+                    {report.rows.map((row, i) => {
+                      const isUserState = userStateName &&
+                        (row.location_desc ?? '').toUpperCase() === userStateName;
+                      return (
+                        <tr key={i} className={isUserState ? card.userRow : undefined}>
+                          <td>{titleCaseState(row.location_desc)}{isUserState ? ' ⭐' : ''}</td>
+                          <td className={card.num}>{row.Value}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

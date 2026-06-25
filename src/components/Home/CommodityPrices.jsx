@@ -35,7 +35,6 @@ const CommodityPrices = () => {
   return (
     <section className={styles.farmSection}>
       <div className={styles.farmSectionHeader}>
-        <span className={styles.sectionIcon}>📈</span>
         <h2>Today's Commodity Prices</h2>
         {updatedAt && (
           <span style={{ marginLeft: 'auto', color: '#a8cc78', fontSize: '.7rem', letterSpacing: '.05em' }}>
@@ -55,10 +54,10 @@ const CommodityPrices = () => {
           <p style={{ color: '#c2410c', textAlign: 'center', width: '100%', fontSize: '.85rem' }}>{error}</p>
         ) : (
           <div className={styles.priceGrid}>
-            {/* Soybean Meal / Oil (their own pages) and Feeder Cattle (shown on the
-                Cattle page) are intentionally kept off the home "all commodities" grid. */}
+            {/* Soybean Meal / Oil, Cotton (their own pages) and Feeder Cattle (shown on
+                the Cattle page) are intentionally kept off the home "all commodities" grid. */}
             {groups
-              .filter(g => !['Soybean Meal', 'Soybean Oil', 'Feeder Cattle'].includes(g.name))
+              .filter(g => !['Soybean Meal', 'Soybean Oil', 'Feeder Cattle', 'Cotton'].includes(g.name))
               .map(g => (
                 <CommodityCard key={g.name} group={g} />
               ))}

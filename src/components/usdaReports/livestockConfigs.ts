@@ -11,7 +11,7 @@ import { CategoryDef, MonthOption } from './LivestockInventoryPanel';
  * can hit it from the /usda page with a finer filter.
  */
 export const CATTLE_MONTHS: MonthOption[] = [
-  { value: '1', label: 'January 1 (Annual Inventory)' },
+  { value: '1', label: 'January 1 (Annual Inventory)', default: true },
   { value: '7', label: 'July 1 (Mid-Year Inventory)'  },
 ];
 
@@ -40,7 +40,7 @@ export const HOGS_MONTHS: MonthOption[] = [
   { value: '3',  label: 'March 1 (Q1)'      },
   { value: '6',  label: 'June 1 (Q2)'       },
   { value: '9',  label: 'September 1 (Q3)'  },
-  { value: '12', label: 'December 1 (Q4)'   },
+  { value: '12', label: 'December 1 (Q4)', default: true },
 ];
 
 export const HOGS_CATEGORIES: CategoryDef[] = [

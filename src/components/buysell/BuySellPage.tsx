@@ -16,7 +16,7 @@ export default function BuySellPage() {
         <div aria-hidden style={{ pointerEvents: 'none', userSelect: 'none', opacity: 0.4, filter: 'blur(1.5px)' }}>
           <div className={styles.sectionHeadRow}>
             <div className={styles.titleGroup}>
-              <span>🛒</span>
+              
               <h2>Buy / Sell Listings</h2>
             </div>
             <button className={styles.headerBtn} disabled>+ Add Listing</button>

@@ -9,7 +9,6 @@ export default function SoybeanMealPage() {
       <CommodityDashboard
         commodity="SOYBEAN_MEAL"
         commodityLabel="Soybean Meal"
-        commodityIcon="🥣"
         pricesGroupName="Soybean Meal"
         crushProduct
       />

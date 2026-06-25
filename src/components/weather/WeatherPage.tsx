@@ -26,7 +26,6 @@ export default function WeatherPage() {
       <div style={{ display: 'flex', gap: '1rem', alignItems: 'stretch', flexWrap: 'wrap' }}>
         <div className={styles.section} style={{ flex: '2 1 460px', margin: 0 }}>
           <div className={styles.sectionHead}>
-            <span>🌦️</span>
             <h2>Weather Forecast — NWS</h2>
           </div>
           <div className={styles.sectionBody}>

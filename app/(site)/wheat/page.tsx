@@ -9,7 +9,6 @@ export default function WheatPage() {
       <CommodityDashboard
         commodity="WHEAT"
         commodityLabel="Wheat"
-        commodityIcon="🌾"
         pricesGroupName="Wheat"
       />
     </div>

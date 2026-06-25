@@ -108,8 +108,7 @@ export default function UsdaResultsPage() {
         border: '1px solid #1a2e0f', borderRadius: 8, padding: '1.5rem 1.75rem',
         marginBottom: '1.25rem', color: '#f0f7e6',
       }}>
-        <h1 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: '1.7rem', margin: '0 0 .35rem' }}>
-          🏅 USDA Yield Challenge — Results
+        <h1 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: '1.7rem', margin: '0 0 .35rem' }}>USDA Yield Challenge — Results
         </h1>
         <p style={{ fontFamily: 'Lato, sans-serif', fontSize: '.9rem', color: '#d8ecc0', margin: 0, maxWidth: 720, lineHeight: 1.55 }}>
           The standings, revealed one board at a time — scroll down to count down to the sharpest guess.{' '}
@@ -183,12 +182,12 @@ export default function UsdaResultsPage() {
               <>
                 <ScrollCue />
                 <RankBoard
-                  title="🏆 By Group"
+                  title="By Group"
                   firstColHeader="Group"
                   rows={data.byGroup}
                 />
                 <RankBoard
-                  title="📍 By State"
+                  title="By State"
                   firstColHeader="State"
                   rows={data.byState}
                 />
@@ -218,7 +217,6 @@ function Headline({
     <div ref={ref} className={`reveal ${inView ? 'reveal-in' : ''}`} style={{ marginBottom: '2.5rem' }}>
       <div className={styles.section}>
         <div className={styles.sectionHead}>
-          <span>🎯</span>
           <h2>USDA Actual — {label} {year}</h2>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'baseline', padding: '1.1rem 1.25rem', fontFamily: 'Lato, sans-serif' }}>
@@ -328,7 +326,6 @@ function IndividualsBoard({
     <div ref={ref} className={`reveal ${inView ? 'reveal-in' : ''}`} style={{ marginBottom: '2rem' }}>
       <div className={styles.section}>
         <div className={styles.sectionHead}>
-          <span>👤</span>
           <h2>Top 10 Individuals</h2>
           <span style={{ marginLeft: 'auto', color: '#a8cc78', fontSize: '.75rem', fontFamily: 'Lato, sans-serif' }}>
             counting down to #1 · vs USDA {usdaYield.toFixed(1)}

@@ -30,7 +30,6 @@ export default function SignInPage() {
     <div className={styles.page}>
       <div className={styles.section} style={{ maxWidth: 460, margin: '3rem auto' }}>
         <div className={styles.sectionHead}>
-          <span>{mode === 'signin' ? '🔐' : '🌱'}</span>
           <h2>{mode === 'signin' ? 'Sign In to Just4Ag' : 'Create Your Just4Ag Account'}</h2>
         </div>
 

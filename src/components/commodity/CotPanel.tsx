@@ -50,7 +50,7 @@ export default function CotPanel({ commodity, commodityLabel }: Props) {
   return (
     <div className={styles.section}>
       <div className={styles.sectionHead}>
-        <span>📊</span>
+        
         <div>
           <h2 style={{ margin: 0 }}>Managed Money</h2>
           <div style={{

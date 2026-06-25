@@ -208,8 +208,8 @@ export interface SupplyDemandSheet {
   reportDate?: string;         // WASDE report date
   prevReportDate?: string;     // prior month's report, for the change comparison
   updatedAt?: string;
-  us: SupplyDemandRow[];
-  world: SupplyDemandRow[];
+  /** Balance sheet per region key ("US", "WORLD", "BRAZIL", "ARGENTINA", "PARAGUAY"). */
+  regions: Record<string, SupplyDemandRow[]>;
   message?: string;
 }
 
@@ -274,6 +274,20 @@ export interface UsdaPlantingReport {
   fellBack: boolean;
   currentPlantings: PlantingSnapshot[];
   priorYearPlantings: PlantingSnapshot[];
+}
+
+/** One state's planted acres for the planting search. */
+export interface PlantingAcresRow {
+  state: string;
+  acres: number;
+}
+
+export interface PlantingSearchResult {
+  commodity: string;
+  year: number;
+  priorYear: number;
+  plantings: PlantingAcresRow[];
+  priorYearPlantings: PlantingAcresRow[];
 }
 
 export interface ForecastDay {
@@ -342,6 +356,40 @@ export interface EnsoData {
   message?: string;
 }
 
+/** Brazil production from CONAB (thousand tonnes / thousand hectares). */
+export interface ConabProduction {
+  commodity: string;
+  source: string;
+  updatedAt?: string;
+  unit?: string;
+  cropYear?: string;
+  priorCropYear?: string;
+  production?: number;          // thousand tonnes
+  area?: number;               // thousand hectares
+  yieldTha?: number | null;    // tonnes/hectare
+  productionYoYPct?: number;
+  productionMoM?: number;       // thousand tonnes vs our last monthly snapshot
+  productionMoMPct?: number;
+  momMonthKey?: number;        // YYYYMM of the snapshot compared against
+  seasons?: { name: string; production: number }[];
+  topStates?: { state: string; production: number; yieldTha?: number | null }[];
+  allStates?: { state: string; production: number; yieldTha?: number | null }[];
+  message?: string;
+}
+
+/** County-level production (bushels) keyed by 5-digit FIPS, for the forecast-map overlay. */
+export interface CropProductionData {
+  commodity: string;
+  year?: number;               // most recent year present
+  minYear?: number;            // oldest county year (map may mix years per county)
+  unit?: string;               // "bushels"
+  source?: string;
+  updatedAt?: string;
+  counties?: number;
+  byFips: Record<string, number>;
+  message?: string;
+}
+
 /** Latest CFTC managed-money positioning for one commodity (empty if untracked). */
 export interface CotPosition {
   reportDate?: string | null;
@@ -372,15 +420,87 @@ export interface EthanolData {
   updatedAt?: string;
   productionUnit?: string;        // "MBBL/D"
   stocksUnit?: string;            // "MBBL"
+  gasolineUnit?: string;          // "MBBL/D"
   production?: EthanolPoint[];     // chronological, ~52 weeks
   stocks?: EthanolPoint[];
+  gasoline?: EthanolPoint[];       // gasoline demand (product supplied)
   productionLatest?: number | null;
   productionWoW?: number | null;
   productionAsOf?: string | null;
   stocksLatest?: number | null;
   stocksAsOf?: string | null;
+  gasolineLatest?: number | null;
+  gasolineWoW?: number | null;
+  gasolineYoYPct?: number | null;
+  gasolineAsOf?: string | null;
+  impliedBlendPct?: number | null; // ethanol production ÷ gasoline supplied
+  ethanolSpotPrice?: number | null; // CME ethanol front, $/gal
+  ethanolSpotUnit?: string;
+  ethanolSpotAsOf?: string | null;
   impliedCornBuPerWeek?: number;  // derived corn grind
   impliedCornBuPerYear?: number;
+  message?: string;
+}
+
+/** A weekly EIA energy metric (crude, diesel, propane) with a chart series. */
+export interface EnergyMetric {
+  key: string;
+  label: string;
+  unit: string;
+  latest: number | null;
+  wow: number | null;
+  asOf: string | null;
+  series: EthanolPoint[];
+}
+export interface EnergyData {
+  source: string;
+  updatedAt?: string;
+  metrics: EnergyMetric[];
+}
+
+/** Soybean oil consumed by biodiesel + renewable diesel (million lbs, monthly). */
+export interface SoyOilBiofuelData {
+  source: string;
+  updatedAt?: string;
+  unit?: string;
+  biodiesel?: EthanolPoint[];
+  renewableDiesel?: EthanolPoint[];
+  total?: EthanolPoint[];
+  biodieselLatest?: number | null;
+  renewableDieselLatest?: number | null;
+  totalLatest?: number | null;
+  asOf?: string | null;
+  totalMoMPct?: number | null;
+  totalYoYPct?: number | null;
+  message?: string;
+}
+
+/** USDA FAS weekly export sales for one commodity. */
+export interface ExportDestination { country: string; netSales: number; }
+export interface ExportSalesData {
+  commodity: string;
+  source?: string;
+  updatedAt?: string;
+  unit?: string;                  // "MT" / "running bales"
+  weekEnding?: string;
+  netSales?: number;
+  shipments?: number;
+  totalCommitment?: number;
+  nextMYNetSales?: number;
+  topDestinations?: ExportDestination[];
+  message?: string;
+}
+
+/** NASS quarterly grain stocks for one commodity. */
+export interface GrainStocksData {
+  commodity: string;
+  unit?: string;                  // "bushels"
+  period?: string;                // "Jun 1, 2026"
+  year?: number;
+  total?: number | null;
+  onFarm?: number | null;
+  offFarm?: number | null;
+  yoyPct?: number | null;
   message?: string;
 }
 
@@ -492,6 +612,9 @@ export const api = {
   getUsdaPlanting: (commodity: string) =>
     get<UsdaPlantingReport>(`/api/usda-reports/planting/${commodity}`),
 
+  getPlantingSearch: (commodity: string, year: number) =>
+    get<PlantingSearchResult>(`/api/usda-reports/planting/${commodity}/${year}`),
+
   getYieldGuesses: (commodity: string) =>
     get<GuessRosterEntry[]>(`/api/yield-guess/${commodity}`),
 
@@ -552,9 +675,23 @@ export const api = {
 
   getEthanol: () => get<EthanolData>('/api/ethanol'),
 
+  getEnergy: () => get<EnergyData>('/api/energy'),
+  getSoyOilBiofuel: () => get<SoyOilBiofuelData>('/api/energy/soyoil-biofuel'),
+
+  getExportSales: (commodity: string) => get<ExportSalesData>(`/api/export-sales/${commodity}`),
+  getGrainStocks: (commodity: string) => get<GrainStocksData>(`/api/grain-stocks/${commodity}`),
+
   getNews: () => get<NewsItem[]>('/api/news'),
 
   getCot: (commodity: string) => get<CotPosition>(`/api/cot/${commodity}`),
+
+  getConab: (commodity: string) => get<ConabProduction>(`/api/conab/${commodity}`),
+
+  // Canada (Statistics Canada) — same production shape as CONAB.
+  getStatCan: (commodity: string) => get<ConabProduction>(`/api/statcan/${commodity}`),
+
+  // County-level production (bushels) by 5-digit FIPS, for the forecast-map overlay.
+  getCropProduction: (commodity: string) => get<CropProductionData>(`/api/crop-production/${commodity}`),
 
   saveEnsoForecast: async (
     body: { issued: string; rows: Omit<EnsoForecastRow, 'id' | 'issued'>[] },

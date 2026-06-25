@@ -1,7 +1,8 @@
 'use client';
 
-import PlantingEstimatorPanel from './PlantingEstimatorPanel';
+import PlantingAcresPanel from './PlantingAcresPanel';
 import LivestockInventoryPanel from './LivestockInventoryPanel';
+import YieldLookupPanel from './YieldLookupPanel';
 import { ReportDef } from './reportDefs';
 
 interface Props { active: ReportDef; }
@@ -13,14 +14,11 @@ interface Props { active: ReportDef; }
  * carry internal state that should reset between commodities.
  */
 export default function ActiveReportPanel({ active }: Props) {
+  if (active.kind === 'YIELD_LOOKUP') {
+    return <YieldLookupPanel key={active.value} />;
+  }
   if (active.kind === 'PLANTING') {
-    return (
-      <PlantingEstimatorPanel
-        key={active.value}
-        commodity={active.commodity}
-        commodityLabel={active.commodityLabel}
-      />
-    );
+    return <PlantingAcresPanel key={active.value} />;
   }
   return (
     <LivestockInventoryPanel

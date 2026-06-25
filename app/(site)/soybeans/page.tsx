@@ -1,6 +1,7 @@
 'use client';
 
 import CommodityDashboard from '@/src/components/commodity/CommodityDashboard';
+import SoybeanCrushPanel from '@/src/components/commodity/SoybeanCrushPanel';
 import styles from '@/src/styles/farm.module.css';
 
 export default function SoybeansPage() {
@@ -9,9 +10,9 @@ export default function SoybeansPage() {
       <CommodityDashboard
         commodity="SOYBEANS"
         commodityLabel="Soybeans"
-        commodityIcon="🫘"
         pricesGroupName="Soybeans"
       />
+      <SoybeanCrushPanel />
     </div>
   );
 }

@@ -1,11 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api, EthanolData, EthanolPoint } from '@/src/lib/api';
+import { api, EthanolData, EthanolPoint, CommodityGroup } from '@/src/lib/api';
 import styles from '@/src/styles/farm.module.css';
+
+const GAL_PER_BUSHEL = 2.8;   // ethanol yield per bushel of corn
 
 const PROD_COLOR  = '#3d6b2a';   // green
 const STOCK_COLOR = '#a16207';   // amber
+const GAS_COLOR   = '#2563eb';   // blue (gasoline demand)
 
 function fmtInt(n: number | null | undefined): string {
   return n == null ? '—' : Math.round(n).toLocaleString();
@@ -24,6 +27,7 @@ function fmtDate(p: string | null | undefined): string {
 
 export default function EthanolPage() {
   const [data, setData] = useState<EthanolData | null>(null);
+  const [prices, setPrices] = useState<CommodityGroup[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -35,25 +39,37 @@ export default function EthanolPage() {
       .then(d => { if (!cancelled) setData(d); })
       .catch(() => { if (!cancelled) setError('Could not load ethanol data.'); })
       .finally(() => { if (!cancelled) setLoading(false); });
+    api.getPrices().then(p => { if (!cancelled) setPrices(p); }).catch(() => {});
     return () => { cancelled = true; };
   }, []);
 
   const production = data?.production ?? [];
   const stocks = data?.stocks ?? [];
+  const gasoline = data?.gasoline ?? [];
   const hasData = production.length > 0 || stocks.length > 0;
   const wow = data?.productionWoW ?? null;
+  const gasWow = data?.gasolineWoW ?? null;
+
+  // Corn–ethanol gross margin (before DDGS / corn-oil co-product credits).
+  const ethSpot = data?.ethanolSpotPrice ?? null;
+  const cornFront = prices?.find(g => g.name === 'Corn')?.contracts?.find(c => c.last != null) ?? null;
+  const cornCost = cornFront?.last != null ? cornFront.last / 100 : null;
+  const ethRevenue = ethSpot != null ? ethSpot * GAL_PER_BUSHEL : null;
+  const grossSpread = ethRevenue != null && cornCost != null ? ethRevenue - cornCost : null;
 
   return (
     <div className={styles.page}>
       <div className={styles.section}>
         <div className={styles.sectionHead}>
-          <span>⛽</span>
+          
           <h2>Ethanol Tracker</h2>
         </div>
         <div className={styles.sectionBody}>
           <p style={{ fontFamily: 'Lato, sans-serif', fontSize: '.85rem', color: '#666', margin: '0 0 1rem' }}>
             About <strong>40% of the U.S. corn crop</strong> is ground for ethanol, so the EIA&rsquo;s weekly
-            production figure is a near real-time read on corn demand. Released every Wednesday.
+            production figure is a near real-time read on corn demand. <strong>Gasoline demand</strong> is the
+            other side of that coin — most ethanol is blended into gasoline (~10%), so softer driving demand
+            eventually pressures the corn grind. Released every Wednesday.
           </p>
 
           {loading && <p className={styles.loading}>Loading ethanol data…</p>}
@@ -96,6 +112,24 @@ export default function EthanolPage() {
                   accent={STOCK_COLOR}
                   sub={data?.stocksAsOf ? <>{fmtDate(data.stocksAsOf)}</> : undefined}
                 />
+                {data?.gasolineLatest != null && (
+                  <Card
+                    label="Gasoline Demand"
+                    value={fmtInt(data?.gasolineLatest)}
+                    unit={data?.gasolineUnit ?? 'MBBL/D'}
+                    accent={GAS_COLOR}
+                    sub={
+                      <>
+                        {gasWow != null && (
+                          <span style={{ color: gasWow > 0 ? '#1a7f37' : gasWow < 0 ? '#b42318' : '#888', fontWeight: 700 }}>
+                            {gasWow > 0 ? '▲ +' : gasWow < 0 ? '▼ ' : ''}{gasWow !== 0 ? gasWow : '±0'} vs last wk
+                          </span>
+                        )}
+                        {data?.impliedBlendPct != null && <> · blend ~{data.impliedBlendPct}%</>}
+                      </>
+                    }
+                  />
+                )}
               </div>
 
               <div style={{
@@ -106,6 +140,9 @@ export default function EthanolPage() {
                 )}
                 {stocks.length > 1 && (
                   <LineChart title="Ethanol Stocks" unit="thousand barrels (MBBL)" points={stocks} color={STOCK_COLOR} />
+                )}
+                {gasoline.length > 1 && (
+                  <LineChart title="Gasoline Demand" unit="thousand barrels/day (MBBL/D)" points={gasoline} color={GAS_COLOR} />
                 )}
               </div>
 
@@ -120,6 +157,25 @@ export default function EthanolPage() {
                 (~{fmtBu(data?.impliedCornBuPerYear)} billion bu/yr). Rising production tightens corn demand;
                 rising stocks can signal the opposite.
               </div>
+
+              {/* Corn–ethanol margin */}
+              {grossSpread != null && (
+                <div style={{ marginTop: '1.25rem' }}>
+                  <div style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: '1.05rem', fontWeight: 700, color: '#1a2e0f', margin: '0 0 .5rem' }}>
+                    Corn–Ethanol Margin
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.75rem' }}>
+                    <Card label="Ethanol Price" value={ethSpot != null ? `$${ethSpot.toFixed(2)}` : '—'} unit="/gal" accent="#2563eb" sub={<>CME front</>} />
+                    <Card label="Ethanol Revenue" value={ethRevenue != null ? `$${ethRevenue.toFixed(2)}` : '—'} unit="/bu" accent="#3d6b2a" sub={<>2.8 gal × price</>} />
+                    <Card label="Corn Cost" value={cornCost != null ? `$${cornCost.toFixed(2)}` : '—'} unit="/bu" accent="#a16207" sub={cornFront ? <>{cornFront.expiration}</> : undefined} />
+                    <Card label="Gross Spread" value={`$${grossSpread.toFixed(2)}`} unit="/bu" accent={grossSpread >= 0 ? '#1a7f37' : '#b42318'} sub={<>before co-product credits</>} />
+                  </div>
+                  <p style={{ margin: '.6rem 0 0', fontSize: '.72rem', color: '#8a8a7a', fontFamily: 'Lato, sans-serif' }}>
+                    Simplified: ethanol revenue minus corn cost. Actual plant margins add <strong>DDGS</strong> and
+                    corn-oil credits (typically ~$0.50–0.80/bu), which aren&rsquo;t in this figure.
+                  </p>
+                </div>
+              )}
 
               <p style={{ margin: '.9rem 0 0', fontSize: '.7rem', color: '#999', fontFamily: 'Lato, sans-serif' }}>
                 {data?.source ?? 'U.S. EIA'}{data?.updatedAt ? ` · updated ${new Date(data.updatedAt).toLocaleDateString()}` : ''}.

@@ -65,7 +65,7 @@ export default function ForecastChangePage() {
       <div className={styles.section}>
         <div className={styles.sectionHeadRow}>
           <div className={styles.titleGroup}>
-            <span>📈</span>
+            
             <h2>Change in Forecast</h2>
           </div>
           <div style={{ display: 'flex', gap: '.5rem' }}>

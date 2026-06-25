@@ -43,7 +43,7 @@ export default function ResetPasswordPage() {
     <div className={styles.page}>
       <div className={styles.section} style={{ maxWidth: 460, margin: '3rem auto' }}>
         <div className={styles.sectionHead}>
-          <span>🔑</span>
+          
           <h2>Choose a New Password</h2>
         </div>
         <div className={styles.sectionBody}>
