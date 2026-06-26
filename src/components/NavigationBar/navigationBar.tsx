@@ -284,6 +284,11 @@ export const NavigationBar = () => {
               <Link href="/feedback" className="auth-link">📬 Feedback</Link>
             </li>
           )}
+          {isAdmin && (
+            <li>
+              <Link href="/admin/wasde" className="auth-link">WASDE Upload</Link>
+            </li>
+          )}
           <li>
             {isLoggedIn ? (
               <Link href="/logout" className="auth-link">

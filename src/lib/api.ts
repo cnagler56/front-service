@@ -491,6 +491,16 @@ export interface ExportSalesData {
   message?: string;
 }
 
+/** Admin WASDE upload status: months loaded + prior uploads. */
+export interface WasdeUpload { filename: string; monthKey: number | null; uploadedAt: string | null; }
+export interface WasdeAdminStatus {
+  ok?: boolean;
+  filename?: string;
+  monthsLoaded?: number[];
+  uploads?: WasdeUpload[];
+  message?: string;
+}
+
 /** NASS quarterly grain stocks for one commodity. */
 export interface GrainStocksData {
   commodity: string;
@@ -680,6 +690,20 @@ export const api = {
 
   getExportSales: (commodity: string) => get<ExportSalesData>(`/api/export-sales/${commodity}`),
   getGrainStocks: (commodity: string) => get<GrainStocksData>(`/api/grain-stocks/${commodity}`),
+
+  // Admin-only WASDE CSV management.
+  getWasdeAdmin: () => get<WasdeAdminStatus>('/api/admin/wasde'),
+  uploadWasde: async (file: File): Promise<WasdeAdminStatus> => {
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch(`${BASE}/api/admin/wasde`, { method: 'POST', body: fd, credentials: 'include' });
+    if (!res.ok) {
+      let msg = `Upload failed (${res.status})`;
+      try { const j = await res.json(); msg = j.message || j.error || msg; } catch { /* ignore */ }
+      throw new Error(msg);
+    }
+    return res.json();
+  },
 
   getNews: () => get<NewsItem[]>('/api/news'),
 
