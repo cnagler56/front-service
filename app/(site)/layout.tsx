@@ -6,6 +6,7 @@ import { NavigationBar } from "@/src/components/NavigationBar/navigationBar";
 import Footer from "@/src/components/Footer/Footer";
 import { UserProvider } from "@/src/lib/UserContext";
 import ServiceWorkerRegister from "@/src/components/pwa/ServiceWorkerRegister";
+import InstallPrompt from "@/src/components/pwa/InstallPrompt";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,6 +43,7 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <UserProvider>
           <ServiceWorkerRegister />
+          <InstallPrompt />
           <Header />
           <NavigationBar />
           {children}
