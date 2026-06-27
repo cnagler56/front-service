@@ -286,7 +286,7 @@ export default function CommodityDashboard({
     <div className={styles.dashboard}>
       {/* ── Header ─────────────────────────────────────────────── */}
       <div className={styles.heroHeader}>
-        <h1>{commodityLabel} Dashboard</h1>
+        <h1>{commodityLabel}</h1>
         <p>
           {crushProduct
             ? `Futures and USDA WASDE supply & demand for ${commodityLabel.toLowerCase()}.`

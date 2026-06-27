@@ -343,9 +343,11 @@ export default function MidwestMap({ locations }: Props) {
   const [droughtDate, setDroughtDate] = useState<Date | null>(null);
   const [showDrought, setShowDrought] = useState(true);
 
-  // Crop-production overlay (county choropleth, lazy-loaded)
-  const [showProd, setShowProd]   = useState(false);
-  const [prodCrop, setProdCrop]   = useState<ProdCrop>('CORN');
+  // Crop-production overlay (county choropleth, lazy-loaded) — temporarily
+  // disabled: the toggle UI is commented out, so showProd stays false and the
+  // overlay never renders. Setters dropped to keep the lint-on-build happy.
+  const [showProd] = useState(false);
+  const [prodCrop] = useState<ProdCrop>('CORN');
   const [counties, setCounties]   = useState<CountyFeature[]>([]);
   const [prodData, setProdData]   = useState<Record<ProdCrop, CropProductionData | null>>({ CORN: null, SOYBEANS: null, WHEAT: null });
 
@@ -511,6 +513,9 @@ export default function MidwestMap({ locations }: Props) {
           >
             🏜️ Drought {showDrought ? 'on' : 'off'}
           </button>
+          {/* Crop-production overlay temporarily disabled — county data isn't
+              showing valid figures yet. Re-enable this block to bring it back. */}
+          {/*
           <button
             type="button"
             onClick={() => setShowProd(s => !s)}
@@ -529,6 +534,7 @@ export default function MidwestMap({ locations }: Props) {
               {CROP_LABEL[c]}
             </button>
           ))}
+          */}
         </div>
         <Legend metric={metric} />
       </div>
