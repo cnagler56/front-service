@@ -284,7 +284,7 @@ export default function LivestockDashboard({
       {/* ── Hero ─────────────────────────────────────────────── */}
       <div className={styles.heroHeader}>
         <h1>
-          {commodityLabel} Dashboard
+          {commodityLabel}
         </h1>
         <p>{inventoryDescription}</p>
       </div>

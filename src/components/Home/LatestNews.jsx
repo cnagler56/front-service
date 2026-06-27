@@ -1,6 +1,5 @@
 'use client';
 import React, { useEffect, useState } from "react";
-import Link from "next/link";
 import { api } from "@/src/lib/api";
 import styles from "./Home.module.css";
 
@@ -64,16 +63,13 @@ function fmtDay(iso) {
 }
 
 function NewsRow({ item, last }) {
-  const inner = (
-    <div
+  return (
+    <li
       style={{
         display: 'flex', alignItems: 'flex-start', gap: '.7rem',
         padding: '.7rem 1.25rem',
         borderBottom: last ? 'none' : '1px solid #ece6d8',
-        transition: 'background .15s',
       }}
-      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(143,188,69,0.10)'; }}
-      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
     >
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontFamily: 'Lato, sans-serif', fontWeight: 700, fontSize: '.9rem', color: '#2c4a1e', lineHeight: 1.3 }}>
@@ -95,16 +91,6 @@ function NewsRow({ item, last }) {
           {fmtDay(item.createdAt)}
         </span>
       )}
-    </div>
-  );
-
-  return (
-    <li>
-      {item.link ? (
-        <Link href={item.link} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
-          {inner}
-        </Link>
-      ) : inner}
     </li>
   );
 }

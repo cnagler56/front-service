@@ -25,10 +25,26 @@ function nextFromMonths(t, items) {
   for (const yy of [y, y + 1]) for (const [m, d] of items) cands.push(at(yy, m, d));
   return cands.filter((c) => c >= now).sort((a, b) => a - b)[0];
 }
-function nthFriday(y, m, n) {
+function nthWeekday(y, m, weekday, n) {
   const first = new Date(y, m, 1);
-  const off = (5 - first.getDay() + 7) % 7;
+  const off = (weekday - first.getDay() + 7) % 7;
   return new Date(y, m, 1 + off + (n - 1) * 7);
+}
+function nthFriday(y, m, n) {
+  return nthWeekday(y, m, 5, n);
+}
+// Quarterly Hogs & Pigs: 4th Thursday of Mar/Jun/Sep; December is pulled earlier
+// for the holidays (≈ the 23rd). Pick the next one that hasn't passed.
+function nextHogsPigs(t) {
+  const now = strip(t);
+  const cands = [];
+  for (const yy of [t.getFullYear(), t.getFullYear() + 1]) {
+    cands.push(nthWeekday(yy, 2, 4, 4)); // late March
+    cands.push(nthWeekday(yy, 5, 4, 4)); // late June
+    cands.push(nthWeekday(yy, 8, 4, 4)); // late September
+    cands.push(at(yy, 11, 23));          // late December (approx)
+  }
+  return cands.filter((c) => c >= now).sort((a, b) => a - b)[0];
 }
 function nextThirdFriday(t) {
   const now = strip(t);
@@ -52,7 +68,7 @@ function buildReports(t) {
     { name: 'Acreage', icon: '🌾', date: nextAnnual(t, 5, 30) },
     { name: 'Cattle on Feed', icon: '🐄', approx: true, date: nextThirdFriday(t) },
     { name: 'Cattle Inventory', icon: '🐄', date: nextAnnual(t, 0, 31) },
-    { name: 'Hogs & Pigs', icon: '🐖', approx: true, date: nextFromMonths(t, [[2, 28], [5, 27], [8, 25], [11, 23]]) },
+    { name: 'Hogs & Pigs', icon: '🐖', approx: true, date: nextHogsPigs(t) },
   ];
   // Crop Progress runs roughly April–November.
   if (month >= 3 && month <= 10) {
