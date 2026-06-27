@@ -1,10 +1,11 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./../globals.css";
 import Header from "@/src/components/Header/header";
 import { NavigationBar } from "@/src/components/NavigationBar/navigationBar";
 import Footer from "@/src/components/Footer/Footer";
 import { UserProvider } from "@/src/lib/UserContext";
+import ServiceWorkerRegister from "@/src/components/pwa/ServiceWorkerRegister";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,8 +18,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  applicationName: "Just4Ag",
   title: "Just4Ag",
-  description: "Just4Ag",
+  description: "Agricultural commodity markets, USDA reports, and weather for farmers.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Just4Ag",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#2c4a1e",
 };
 
 export default function RootLayout({
@@ -30,6 +41,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <UserProvider>
+          <ServiceWorkerRegister />
           <Header />
           <NavigationBar />
           {children}
