@@ -1,6 +1,7 @@
 'use client';
 import React, { useLayoutEffect, useRef, useState } from "react";
 import styles from "./Home.module.css";
+import Announcement from "./Announcement";
 import CommodityPrices from "./CommodityPrices";
 import LatestNews from "./LatestNews";
 import UsdaReportCalendar from "./UsdaReportCalendar";
@@ -23,6 +24,7 @@ const Home = () => {
 
   return (
     <main className={styles.farmPageBody}>
+      <Announcement />
       <CommodityPrices />
       <div className={styles.sideBySide}>
         <LatestNews maxHeight={reportH} />

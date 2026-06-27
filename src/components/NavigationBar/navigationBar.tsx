@@ -73,7 +73,8 @@ export const NavigationBar = () => {
         }
 
         /* Auth link styling */
-        .farm-nav li a.auth-link {
+        .farm-nav li a.auth-link,
+        .farm-nav .dropdown-toggle.auth-link {
           color: #8fbc45;
           font-weight: 700;
         }
@@ -280,13 +281,21 @@ export const NavigationBar = () => {
             <Link href="/contact">Contact Us</Link>
           </li>
           {isAdmin && (
-            <li>
-              <Link href="/feedback" className="auth-link">📬 Feedback</Link>
-            </li>
-          )}
-          {isAdmin && (
-            <li>
-              <Link href="/admin/wasde" className="auth-link">WASDE Upload</Link>
+            <li className="has-dropdown">
+              <span className="dropdown-toggle auth-link" role="button" tabIndex={0} aria-haspopup="true">
+                Admin <span aria-hidden="true">▾</span>
+              </span>
+              <ul className="dropdown">
+                <li>
+                  <Link href="/admin/announcement">Announcement</Link>
+                </li>
+                <li>
+                  <Link href="/admin/wasde">WASDE Upload</Link>
+                </li>
+                <li>
+                  <Link href="/feedback">📬 Feedback</Link>
+                </li>
+              </ul>
             </li>
           )}
           <li>

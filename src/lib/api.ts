@@ -514,6 +514,15 @@ export interface GrainStocksData {
   message?: string;
 }
 
+/** Admin-editable home-page announcement. Rendered on the home page only when `active`. */
+export interface Announcement {
+  id?: number;
+  title?: string;
+  body?: string;
+  active: boolean;
+  updatedAt?: string;
+}
+
 /**
  * Default fetch options for every API call — `credentials: 'include'` is
  * what makes the browser send the session cookie cross-origin (Next.js on
@@ -706,6 +715,23 @@ export const api = {
   },
 
   getNews: () => get<NewsItem[]>('/api/news'),
+
+  // Home-page announcement: public GET, plus admin GET (pre-fill) and POST (upsert).
+  getAnnouncement: () => get<Announcement>('/api/announcement'),
+  getAdminAnnouncement: () => get<Announcement>('/api/admin/announcement'),
+  saveAnnouncement: async (body: { title: string; body: string; active: boolean }): Promise<Announcement> => {
+    const res = await fetch(`${BASE}/api/admin/announcement`, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      let msg = `Save failed (${res.status})`;
+      try { const j = await res.json(); msg = j.message || j.error || msg; } catch { /* ignore */ }
+      throw new Error(msg);
+    }
+    return res.json() as Promise<Announcement>;
+  },
 
   getCot: (commodity: string) => get<CotPosition>(`/api/cot/${commodity}`),
 
