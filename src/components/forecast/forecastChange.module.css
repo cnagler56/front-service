@@ -13,10 +13,10 @@
 }
 
 .locCard {
-  background: #fff;
-  border: 1px solid #ddd8cc;
+  background: var(--ckpt-panel);
+  border: 1px solid var(--ckpt-line);
   border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, .05);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, .4);
   padding: 1.1rem 1.25rem;
   margin-bottom: 0;       /* gap on the grid handles spacing */
   min-width: 0;           /* let the day-grid shrink rather than overflow */
@@ -31,15 +31,17 @@
 }
 .locName {
   margin: 0;
-  font-family: 'Playfair Display', Georgia, serif;
-  color: #2c4a1e;
-  font-size: 1.15rem;
+  font-family: 'Orbitron', sans-serif;
+  color: var(--ckpt-text);
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: .04em;
 }
 .locMeta {
   margin: .2rem 0 0;
   font-family: 'Lato', sans-serif;
   font-size: .78rem;
-  color: #666;
+  color: var(--ckpt-text-mut);
 }
 .locActions {
   display: flex;
@@ -48,37 +50,38 @@
 }
 .iconBtn {
   background: none;
-  border: 1px solid #e5dfcc;
+  border: 1px solid var(--ckpt-line);
   border-radius: 4px;
   cursor: pointer;
   padding: .2rem .45rem;
   font-size: 1rem;
+  color: var(--ckpt-text-mut);
   transition: background .15s, border-color .15s;
 }
 .iconBtn:hover {
-  background: #f7faf2;
-  border-color: #8fbc45;
+  background: var(--ckpt-panel-3);
+  border-color: var(--ckpt-cyan);
 }
 
 .error {
   margin: .5rem 0;
   padding: .55rem .75rem;
   border-radius: 4px;
-  background: rgba(190, 50, 50, .1);
-  border: 1px solid rgba(190, 50, 50, .35);
-  color: #b91c1c;
+  background: rgba(255, 92, 92, .1);
+  border: 1px solid rgba(255, 92, 92, .35);
+  color: #ff8a8a;
   font-family: 'Lato', sans-serif;
   font-size: .82rem;
 }
 .empty {
   font-family: 'Lato', sans-serif;
-  color: #888;
+  color: var(--ckpt-text-dim);
   font-style: italic;
   font-size: .85rem;
   padding: 1rem;
   text-align: center;
-  background: #fdfaf4;
-  border: 1px dashed #e1dccc;
+  background: var(--ckpt-panel-2);
+  border: 1px dashed var(--ckpt-line);
   border-radius: 4px;
 }
 
@@ -87,7 +90,7 @@
   display: grid;
   grid-template-columns: 95px 75px 75px 75px 1fr;
   gap: 0;
-  border: 1px solid #e1dccc;
+  border: 1px solid var(--ckpt-line);
   border-radius: 6px;
   overflow: hidden;
   font-family: 'Lato', sans-serif;
@@ -100,7 +103,7 @@
 .headerRow span,
 .dayRow > span {
   padding: .45rem .55rem;
-  border-bottom: 1px solid #f0ebdc;
+  border-bottom: 1px solid var(--ckpt-line-soft);
   display: flex;
   align-items: center;
   gap: .35rem;
@@ -111,37 +114,38 @@
   font-size: .65rem;
   text-transform: uppercase;
   letter-spacing: .05em;
-  color: #6a7a55;
+  color: var(--ckpt-text-dim);
   font-weight: 700;
-  background: #f7faf2;
-  border-bottom: 1px solid #e1dccc;
+  background: var(--ckpt-panel-2);
+  border-bottom: 1px solid var(--ckpt-line);
 }
 
 .dayName {
   font-weight: 700;
-  color: #2c4a1e;
+  color: var(--ckpt-text);
   font-size: .85rem;
-  background: #fafafa;
+  background: var(--ckpt-panel-2);
 }
 
 .cell {
+  font-family: 'Geist Mono', monospace;
   font-size: .9rem;
-  color: #1a2e0f;
+  color: var(--ckpt-text);
   transition: background .25s;
 }
 .cell strong { font-weight: 700; }
 .deltaPill {
   font-size: .7rem;
   font-weight: 700;
-  background: rgba(255, 255, 255, .85);
-  border: 1px solid rgba(0, 0, 0, .08);
+  background: rgba(0, 0, 0, .35);
+  border: 1px solid rgba(255, 255, 255, .12);
   padding: .05rem .35rem;
   border-radius: 3px;
 }
 
 .dayShort {
   font-size: .78rem;
-  color: #444;
+  color: var(--ckpt-text-mut);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -154,7 +158,7 @@
   .dayRow > span:nth-child(5) {
     grid-column: 1 / -1;
     font-size: .8rem;
-    color: #666;
+    color: var(--ckpt-text-mut);
     padding-top: 0;
   }
 }

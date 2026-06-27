@@ -14,56 +14,61 @@ const Header = () => {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Lato:wght@300;400&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Lato:wght@300;400&display=swap');
 
         .farm-header {
           width: 100%;
-          background: linear-gradient(135deg, #2c4a1e 0%, #3d6b2a 50%, #2c4a1e 100%);
-          border-bottom: 3px solid #8fbc45;
+          background:
+            linear-gradient(180deg, #16222f 0%, #0d141d 100%);
+          border-bottom: 1px solid var(--ckpt-amber);
           display: flex;
           align-items: center;
           justify-content: space-between;
           padding: 0 2.5rem;
           height: 80px;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+          box-shadow: 0 2px 24px rgba(0,0,0,0.6), inset 0 -1px 0 rgba(255,178,77,.25);
           position: relative;
           overflow: hidden;
         }
 
+        /* Subtle scanline sheen across the panel */
         .farm-header::before {
           content: '';
           position: absolute;
           inset: 0;
-          background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+          background: repeating-linear-gradient(
+            0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 3px);
           pointer-events: none;
         }
 
         .farm-site-title {
-          font-family: 'Playfair Display', Georgia, serif;
-          font-size: 1.65rem;
+          font-family: 'Orbitron', 'Lato', sans-serif;
+          font-size: 1.5rem;
           font-weight: 700;
-          color: #f0f7e6;
-          letter-spacing: 0.04em;
+          color: var(--ckpt-text);
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
           display: flex;
           align-items: center;
-          gap: 0.65rem;
-          text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+          gap: 0.7rem;
+          text-shadow: var(--ckpt-glow-cyan);
           position: relative;
           z-index: 1;
         }
 
         .farm-site-title .leaf-icon {
-          color: #8fbc45;
-          font-size: 1.3rem;
+          color: var(--ckpt-amber);
+          font-size: 1.15rem;
           line-height: 1;
+          text-shadow: var(--ckpt-glow-amber);
         }
 
         .farm-welcome {
           font-family: 'Lato', sans-serif;
-          font-weight: 300;
-          font-size: 0.875rem;
-          color: #c8e6a0;
-          letter-spacing: 0.08em;
+          font-weight: 400;
+          font-size: 0.78rem;
+          color: var(--ckpt-cyan);
+          letter-spacing: 0.14em;
           text-transform: uppercase;
           position: relative;
           z-index: 1;
@@ -75,17 +80,23 @@ const Header = () => {
         .farm-welcome::before {
           content: '';
           display: inline-block;
-          width: 6px;
-          height: 6px;
-          background: #8fbc45;
+          width: 7px;
+          height: 7px;
+          background: var(--ckpt-green);
           border-radius: 50%;
-          box-shadow: 0 0 6px #8fbc45;
+          box-shadow: 0 0 8px var(--ckpt-green);
+          animation: ckptPulse 2.2s ease-in-out infinite;
+        }
+
+        @keyframes ckptPulse {
+          0%, 100% { opacity: 1; }
+          50%      { opacity: .35; }
         }
       `}</style>
 
       <header className="farm-header">
         <h1 className="farm-site-title">
-          <span className="leaf-icon">🌿</span>
+          <span className="leaf-icon">◆</span>
           Just4Ag
         </h1>
         {welcomeMessage && <div className="farm-welcome">{welcomeMessage}</div>}

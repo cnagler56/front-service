@@ -18,9 +18,9 @@ export const NavigationBar = () => {
 
         .farm-nav {
           width: 100%;
-          background: #1a2e0f;
-          border-bottom: 1px solid #2c4a1e;
-          box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+          background: #0d141d;
+          border-bottom: 1px solid var(--ckpt-line);
+          box-shadow: 0 2px 16px rgba(0,0,0,0.55);
           position: relative;
           z-index: 10;
         }
@@ -46,7 +46,7 @@ export const NavigationBar = () => {
           font-size: 0.75rem;
           letter-spacing: 0.1em;
           text-transform: uppercase;
-          color: #a8cc78;
+          color: var(--ckpt-text-mut);
           text-decoration: none;
           display: flex;
           align-items: center;
@@ -56,8 +56,9 @@ export const NavigationBar = () => {
         }
 
         .farm-nav li a:hover {
-          color: #f0f7e6;
-          background: rgba(143, 188, 69, 0.12);
+          color: var(--ckpt-cyan);
+          background: rgba(69, 214, 230, 0.08);
+          text-shadow: var(--ckpt-glow-cyan);
         }
 
         /* Separator dots between items */
@@ -69,33 +70,35 @@ export const NavigationBar = () => {
           transform: translateY(-50%);
           width: 1px;
           height: 14px;
-          background: #2c4a1e;
+          background: var(--ckpt-line);
         }
 
         /* Auth link styling */
         .farm-nav li a.auth-link {
-          color: #8fbc45;
+          color: var(--ckpt-amber);
           font-weight: 700;
         }
 
         .farm-nav li a.auth-link:hover {
-          color: #f0f7e6;
-          background: rgba(143, 188, 69, 0.2);
+          color: var(--ckpt-amber);
+          background: rgba(255, 178, 77, 0.12);
+          text-shadow: var(--ckpt-glow-amber);
         }
 
         /* Highlighted "challenge" call-to-action link */
         .farm-nav li a.challenge-link {
-          color: #1a2e0f;
-          background: #8fbc45;
+          color: #0a0f16;
+          background: var(--ckpt-amber);
           font-weight: 700;
           border-radius: 4px;
           margin: 0 .3rem;
-          box-shadow: 0 1px 6px rgba(143, 188, 69, 0.45);
+          box-shadow: 0 0 10px rgba(255, 178, 77, 0.45);
         }
 
         .farm-nav li a.challenge-link:hover {
-          color: #1a2e0f;
-          background: #a8cc78;
+          color: #0a0f16;
+          background: #ffc46e;
+          text-shadow: none;
         }
 
         /* Suppress the underline indicator on the pill-style challenge link */
@@ -111,7 +114,8 @@ export const NavigationBar = () => {
           left: 1.1rem;
           right: 1.1rem;
           height: 2px;
-          background: #8fbc45;
+          background: var(--ckpt-cyan);
+          box-shadow: var(--ckpt-glow-cyan);
           border-radius: 2px 2px 0 0;
         }
 
@@ -126,7 +130,7 @@ export const NavigationBar = () => {
           font-size: 0.75rem;
           letter-spacing: 0.1em;
           text-transform: uppercase;
-          color: #a8cc78;
+          color: var(--ckpt-text-mut);
           display: flex;
           align-items: center;
           gap: 0.3rem;
@@ -137,8 +141,8 @@ export const NavigationBar = () => {
         }
         .farm-nav .has-dropdown:hover > .dropdown-toggle,
         .farm-nav .has-dropdown:focus-within > .dropdown-toggle {
-          color: #f0f7e6;
-          background: rgba(143, 188, 69, 0.12);
+          color: var(--ckpt-cyan);
+          background: rgba(69, 214, 230, 0.08);
         }
         .farm-nav .dropdown {
           display: none;
@@ -146,9 +150,9 @@ export const NavigationBar = () => {
           top: 100%;
           left: 0;
           min-width: 210px;
-          background: #1a2e0f;
-          border: 1px solid #2c4a1e;
-          box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+          background: #0d141d;
+          border: 1px solid var(--ckpt-line);
+          box-shadow: 0 8px 24px rgba(0,0,0,0.6);
           list-style: none;
           margin: 0;
           padding: 0.25rem 0;
@@ -162,7 +166,7 @@ export const NavigationBar = () => {
         .farm-nav .dropdown li + li::before { display: none; }
         .farm-nav .dropdown li a { padding: 0.55rem 1.2rem; }
         .farm-nav .dropdown li a:hover::after { display: none; }
-        .farm-nav .dropdown li a:hover { background: rgba(143, 188, 69, 0.18); }
+        .farm-nav .dropdown li a:hover { background: rgba(69, 214, 230, 0.12); }
       `}</style>
 
       <nav className="farm-nav">

@@ -3,3 +3,70 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Cockpit dark-mode design tokens.
+ * Experimental theme: instrument-panel aesthetic — near-black hull, glass
+ * panels, amber/cyan HUD accents, monospace readouts. Shared chrome (Header,
+ * NavigationBar) and the farm.module.css component system consume these vars,
+ * so retheming happens here. Component-local palettes are migrated separately.
+ * ────────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Surfaces — darkest hull → raised glass */
+  --ckpt-bg:        #0a0f16;
+  --ckpt-panel:     #111a24;
+  --ckpt-panel-2:   #16222f;
+  --ckpt-panel-3:   #1d2c3b;
+  --ckpt-line:      #233547;
+  --ckpt-line-soft: #1a2836;
+
+  /* HUD accents */
+  --ckpt-amber:     #ffb24d;
+  --ckpt-amber-dim: #c8862f;
+  --ckpt-cyan:      #45d6e6;
+  --ckpt-cyan-dim:  #2a8c98;
+  --ckpt-green:     #4fd773;
+  --ckpt-red:       #ff5c5c;
+
+  /* Readout text */
+  --ckpt-text:      #d6e3f0;
+  --ckpt-text-mut:  #8ba0b4;
+  --ckpt-text-dim:  #5d7388;
+
+  /* Glows */
+  --ckpt-glow-amber: 0 0 8px rgba(255, 178, 77, .45);
+  --ckpt-glow-cyan:  0 0 8px rgba(69, 214, 230, .40);
+}
+
+html, body {
+  background: var(--ckpt-bg);
+  color: var(--ckpt-text);
+}
+
+/* Faint instrument grid behind everything */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(rgba(69, 214, 230, .035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(69, 214, 230, .035) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+body > * { position: relative; z-index: 1; }
+
+/* Cockpit scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ckpt-line) transparent;
+}
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: var(--ckpt-bg); }
+*::-webkit-scrollbar-thumb {
+  background: var(--ckpt-line);
+  border-radius: 5px;
+  border: 2px solid var(--ckpt-bg);
+}
+*::-webkit-scrollbar-thumb:hover { background: var(--ckpt-cyan-dim); }

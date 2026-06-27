@@ -7,9 +7,9 @@ export default function Footer() {
     <footer
       style={{
         marginTop: '2.5rem',
-        background: '#1a2e0f',
-        borderTop: '1px solid #2c4a1e',
-        color: '#a8cc78',
+        background: '#0d141d',
+        borderTop: '1px solid #233547',
+        color: '#8ba0b4',
         fontFamily: 'Lato, sans-serif',
       }}
     >

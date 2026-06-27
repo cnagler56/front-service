@@ -1,18 +1,25 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Lato:wght@300;400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700&family=Lato:wght@300;400;700&family=Geist+Mono:wght@400;500;600&display=swap');
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Cockpit dark-mode theme (experimental).
+ * Glass panels on a near-black hull, amber/cyan HUD accents, monospace
+ * readouts. Colors come from the cockpit tokens defined in app/globals.css.
+ * ────────────────────────────────────────────────────────────────────────── */
 
 .page {
   min-height: calc(100vh - 117px);
-  background: #f4f0e8;
+  background: var(--ckpt-bg);
   padding: 2rem 2.5rem;
   font-family: 'Lato', sans-serif;
+  color: var(--ckpt-text);
   box-sizing: border-box;
 }
 
 .section {
-  background: #fff;
+  background: var(--ckpt-panel);
   border-radius: 8px;
-  border: 1px solid #ddd8cc;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, .08);
+  border: 1px solid var(--ckpt-line);
+  box-shadow: 0 2px 20px rgba(0, 0, 0, .45);
   margin-bottom: 2rem;
   overflow: hidden;
 }
@@ -25,10 +32,10 @@
  * applied to it directly so we don't need overflow:hidden to clip them.
  */
 .sectionOpen {
-  background: #fff;
+  background: var(--ckpt-panel);
   border-radius: 8px;
-  border: 1px solid #ddd8cc;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, .08);
+  border: 1px solid var(--ckpt-line);
+  box-shadow: 0 2px 20px rgba(0, 0, 0, .45);
   margin-bottom: 2rem;
   overflow: visible;
 }
@@ -37,8 +44,8 @@
 }
 
 .sectionHead {
-  background: linear-gradient(135deg, #2c4a1e, #3d6b2a);
-  border-bottom: 2px solid #8fbc45;
+  background: linear-gradient(180deg, #16222f, #111a24);
+  border-bottom: 1px solid var(--ckpt-amber);
   padding: .85rem 1.5rem;
   display: flex;
   align-items: center;
@@ -46,11 +53,13 @@
 }
 
 .sectionHead h2 {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: 1.1rem;
-  color: #f0f7e6;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ckpt-text);
   margin: 0;
-  letter-spacing: .03em;
+  letter-spacing: .08em;
+  text-transform: uppercase;
 }
 
 .sectionBody {
@@ -65,24 +74,26 @@
 }
 
 .table th {
-  background: #2c4a1e;
-  color: #f0f7e6;
+  background: var(--ckpt-panel-2);
+  color: var(--ckpt-amber);
   padding: .55rem 1rem;
   text-align: left;
   font-weight: 700;
-  font-size: .75rem;
-  letter-spacing: .07em;
+  font-size: .72rem;
+  letter-spacing: .08em;
   text-transform: uppercase;
+  border-bottom: 1px solid var(--ckpt-line);
 }
 
 .table td {
   padding: .55rem 1rem;
-  border-bottom: 1px solid #eee;
-  color: #444;
+  border-bottom: 1px solid var(--ckpt-line-soft);
+  color: var(--ckpt-text);
+  font-family: 'Geist Mono', monospace;
 }
 
 .table tr:last-child td { border-bottom: none; }
-.table tr:hover td { background: #f4f0e8; }
+.table tr:hover td { background: var(--ckpt-panel-3); }
 
 /* ── Form ── */
 .form {
@@ -99,22 +110,23 @@
 }
 
 .formRow label {
-  font-size: .75rem;
+  font-size: .72rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: .07em;
-  color: #2c4a1e;
+  letter-spacing: .08em;
+  color: var(--ckpt-text-dim);
 }
 
 .formRow input,
 .formRow select,
 .formRow textarea {
-  border: 1px solid #ccc;
+  border: 1px solid var(--ckpt-line);
   border-radius: 4px;
   padding: .5rem .75rem;
   font-size: .95rem;
-  font-family: 'Lato', sans-serif;
-  color: #333;
+  font-family: 'Geist Mono', monospace;
+  background: var(--ckpt-panel-2);
+  color: var(--ckpt-text);
   width: 100%;
   box-sizing: border-box;
 }
@@ -123,8 +135,8 @@
 .formRow select:focus,
 .formRow textarea:focus {
   outline: none;
-  border-color: #8fbc45;
-  box-shadow: 0 0 0 2px rgba(143, 188, 69, .2);
+  border-color: var(--ckpt-cyan);
+  box-shadow: 0 0 0 2px rgba(69, 214, 230, .2);
 }
 
 .formRow textarea { resize: vertical; min-height: 80px; }
@@ -144,35 +156,45 @@
 
 /* ── Buttons ── */
 .btn {
-  background: #2c4a1e;
-  color: #f0f7e6;
-  border: none;
+  background: rgba(69, 214, 230, .08);
+  color: var(--ckpt-cyan);
+  border: 1px solid var(--ckpt-cyan-dim);
   border-radius: 4px;
   padding: .6rem 1.5rem;
-  font-size: .9rem;
-  font-family: 'Lato', sans-serif;
-  font-weight: 700;
+  font-size: .82rem;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
   cursor: pointer;
-  letter-spacing: .04em;
-  transition: background .2s;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  transition: background .2s, box-shadow .2s, color .2s;
   align-self: flex-start;
 }
 
-.btn:hover { background: #3d6b2a; }
-.btn:disabled { background: #aaa; cursor: not-allowed; }
+.btn:hover {
+  background: rgba(69, 214, 230, .16);
+  box-shadow: var(--ckpt-glow-cyan);
+}
+.btn:disabled {
+  background: var(--ckpt-panel-2);
+  color: var(--ckpt-text-dim);
+  border-color: var(--ckpt-line);
+  cursor: not-allowed;
+  box-shadow: none;
+}
 
 /* ── Status messages ── */
 .loading {
-  color: #888;
+  color: var(--ckpt-text-dim);
   font-style: italic;
   padding: 2rem;
   text-align: center;
 }
 
 .error {
-  color: #c0392b;
-  background: #fdf0f0;
-  border: 1px solid #e74c3c;
+  color: #ff8a8a;
+  background: rgba(255, 92, 92, .1);
+  border: 1px solid var(--ckpt-red);
   border-radius: 4px;
   padding: .75rem 1rem;
   font-size: .9rem;
@@ -180,9 +202,9 @@
 }
 
 .success {
-  color: #27ae60;
-  background: #f0fdf4;
-  border: 1px solid #27ae60;
+  color: #8ce9a4;
+  background: rgba(79, 215, 115, .1);
+  border: 1px solid var(--ckpt-green);
   border-radius: 4px;
   padding: .75rem 1rem;
   font-size: .9rem;
@@ -191,7 +213,7 @@
 
 .empty {
   text-align: center;
-  color: #aaa;
+  color: var(--ckpt-text-dim);
   padding: 2rem;
   font-size: .9rem;
 }
@@ -212,35 +234,37 @@
 
 /* ── Corn page: live estimate display ── */
 .estimateDisplay {
-  background: linear-gradient(135deg, #2c4a1e, #3d6b2a);
+  background: linear-gradient(180deg, #16222f, #0d141d);
+  border: 1px solid var(--ckpt-amber-dim);
   border-radius: 8px;
   padding: 1.5rem;
   text-align: center;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, .2);
+  box-shadow: 0 0 24px rgba(255, 178, 77, .12), inset 0 0 30px rgba(0, 0, 0, .4);
 }
 
 .estimateLabel {
-  font-family: 'Lato', sans-serif;
-  font-size: .72rem;
-  color: #a8cc78;
+  font-family: 'Orbitron', sans-serif;
+  font-size: .68rem;
+  color: var(--ckpt-text-dim);
   text-transform: uppercase;
-  letter-spacing: .12em;
+  letter-spacing: .16em;
   margin: 0 0 .5rem;
 }
 
 .estimateValue {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: 'Geist Mono', monospace;
   font-size: 3.2rem;
-  font-weight: 700;
-  color: #f0f7e6;
+  font-weight: 600;
+  color: var(--ckpt-amber);
   line-height: 1;
   margin: .25rem 0;
+  text-shadow: var(--ckpt-glow-amber);
 }
 
 .estimateUnit {
   font-family: 'Lato', sans-serif;
   font-size: .82rem;
-  color: #8fbc45;
+  color: var(--ckpt-text-mut);
   margin: .5rem 0 0;
 }
 
@@ -255,72 +279,76 @@
   position: sticky;
   top: 0;
   z-index: 1;
-  background: #2c4a1e;
-  color: #f0f7e6;
+  background: var(--ckpt-panel-2);
+  color: var(--ckpt-amber);
   padding: .5rem .9rem;
   text-align: left;
-  font-size: .7rem;
-  letter-spacing: .08em;
+  font-size: .68rem;
+  letter-spacing: .09em;
   text-transform: uppercase;
   font-weight: 700;
+  border-bottom: 1px solid var(--ckpt-line);
 }
 
 .cornTable td {
   padding: .4rem .7rem;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--ckpt-line-soft);
+  font-family: 'Geist Mono', monospace;
+  color: var(--ckpt-text);
 }
 
-.cornTable tr:nth-child(even) td { background: #f9fdf4; }
-.cornTable tr:hover td { background: #f0fdf4; }
+.cornTable tr:nth-child(even) td { background: rgba(255, 255, 255, .015); }
+.cornTable tr:hover td { background: var(--ckpt-panel-3); }
 
 .stateInput {
   width: 72px;
   padding: .3rem .5rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--ckpt-line);
   border-radius: 4px;
   font-size: .875rem;
-  font-family: 'Lato', sans-serif;
-  color: #333;
+  font-family: 'Geist Mono', monospace;
+  background: var(--ckpt-panel-2);
+  color: var(--ckpt-text);
   outline: none;
   transition: border-color .15s, background .15s;
 }
 
-.stateInput:focus { border-color: #8fbc45; box-shadow: 0 0 0 2px rgba(143,188,69,.2); }
-.stateInputModified { border-color: #8fbc45; background: #f0fdf4; }
+.stateInput:focus { border-color: var(--ckpt-cyan); box-shadow: 0 0 0 2px rgba(69, 214, 230, .2); }
+.stateInputModified { border-color: var(--ckpt-amber); background: rgba(255, 178, 77, .08); }
 
-.diffUp   { font-size: .7rem; color: #27ae60; font-weight: 700; min-width: 32px; }
-.diffDown { font-size: .7rem; color: #e74c3c; font-weight: 700; min-width: 32px; }
+.diffUp   { font-size: .7rem; color: var(--ckpt-green); font-weight: 700; min-width: 32px; }
+.diffDown { font-size: .7rem; color: var(--ckpt-red); font-weight: 700; min-width: 32px; }
 
 /* ── Guess card in community list ── */
 .guessCard {
   display: flex;
   align-items: center;
   padding: .65rem 1rem;
-  border-bottom: 1px solid #f0ede8;
+  border-bottom: 1px solid var(--ckpt-line-soft);
   transition: background .15s;
 }
 
-.guessCard:hover { background: #f9fdf4; }
+.guessCard:hover { background: var(--ckpt-panel-3); }
 .guessCard:last-child { border-bottom: none; }
 
 .guessName {
   font-family: 'Lato', sans-serif;
   font-weight: 700;
   font-size: .875rem;
-  color: #2c4a1e;
+  color: var(--ckpt-text);
 }
 
 .guessMeta {
   font-family: 'Lato', sans-serif;
   font-size: .75rem;
-  color: #888;
+  color: var(--ckpt-text-dim);
 }
 
 .guessValue {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: 'Geist Mono', monospace;
   font-size: 1.25rem;
-  font-weight: 700;
-  color: #3d6b2a;
+  font-weight: 600;
+  color: var(--ckpt-cyan);
   margin-left: auto;
 }
 
@@ -332,43 +360,45 @@
 }
 
 .weatherCard {
-  background: #f9fdf4;
-  border: 1px solid #d4e8b0;
+  background: var(--ckpt-panel-2);
+  border: 1px solid var(--ckpt-line);
   border-radius: 6px;
   padding: 1rem;
 }
 
 .weatherCard h3 {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: .95rem;
-  color: #2c4a1e;
+  font-family: 'Orbitron', sans-serif;
+  font-size: .9rem;
+  color: var(--ckpt-text);
+  letter-spacing: .04em;
   margin: 0 0 .4rem;
 }
 
 .weatherCard .temp {
+  font-family: 'Geist Mono', monospace;
   font-size: 1.6rem;
-  font-weight: 700;
-  color: #3d6b2a;
+  font-weight: 600;
+  color: var(--ckpt-cyan);
   margin: .2rem 0;
 }
 
 .weatherCard .meta {
   font-size: .8rem;
-  color: #666;
+  color: var(--ckpt-text-mut);
   margin: .15rem 0;
 }
 
 .weatherCard .forecast {
   font-size: .82rem;
-  color: #555;
+  color: var(--ckpt-text-mut);
   margin-top: .5rem;
   font-style: italic;
 }
 
 /* ── Buy/Sell: header with right-aligned action button ── */
 .sectionHeadRow {
-  background: linear-gradient(135deg, #2c4a1e, #3d6b2a);
-  border-bottom: 2px solid #8fbc45;
+  background: linear-gradient(180deg, #16222f, #111a24);
+  border-bottom: 1px solid var(--ckpt-amber);
   padding: .85rem 1.5rem;
   display: flex;
   align-items: center;
@@ -383,28 +413,30 @@
 }
 
 .sectionHeadRow h2 {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: 1.1rem;
-  color: #f0f7e6;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ckpt-text);
   margin: 0;
-  letter-spacing: .03em;
+  letter-spacing: .08em;
+  text-transform: uppercase;
 }
 
 .headerBtn {
-  background: #8fbc45;
-  color: #1d3613;
+  background: var(--ckpt-amber);
+  color: #0a0f16;
   border: none;
   border-radius: 4px;
   padding: .5rem 1.1rem;
-  font-size: .82rem;
-  font-family: 'Lato', sans-serif;
-  font-weight: 700;
+  font-size: .78rem;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
   cursor: pointer;
-  letter-spacing: .05em;
+  letter-spacing: .06em;
   text-transform: uppercase;
-  transition: background .2s, transform .1s;
+  transition: background .2s, transform .1s, box-shadow .2s;
 }
-.headerBtn:hover { background: #a8d05a; }
+.headerBtn:hover { background: #ffc46e; box-shadow: var(--ckpt-glow-amber); }
 .headerBtn:active { transform: translateY(1px); }
 
 /* ── Buy/Sell: filter pills row ── */
@@ -419,9 +451,10 @@
 .filterGroup {
   display: flex;
   gap: .35rem;
-  background: #f4f0e8;
+  background: var(--ckpt-panel-2);
   padding: .25rem;
   border-radius: 6px;
+  border: 1px solid var(--ckpt-line);
 }
 
 .filterPill {
@@ -429,19 +462,19 @@
   border: none;
   border-radius: 4px;
   padding: .35rem .85rem;
-  font-size: .78rem;
+  font-size: .76rem;
   font-family: 'Lato', sans-serif;
   font-weight: 700;
-  color: #555;
+  color: var(--ckpt-text-mut);
   cursor: pointer;
-  letter-spacing: .04em;
+  letter-spacing: .05em;
   text-transform: uppercase;
   transition: background .15s, color .15s;
 }
-.filterPill:hover { color: #2c4a1e; }
+.filterPill:hover { color: var(--ckpt-cyan); }
 .filterPillActive {
-  background: #2c4a1e;
-  color: #f0f7e6;
+  background: var(--ckpt-cyan-dim);
+  color: #0a0f16;
 }
 
 /* ── Buy/Sell: listing card grid ── */
@@ -454,14 +487,15 @@
 .listingCard {
   display: flex;
   flex-direction: column;
-  border: 1px solid #e3decf;
+  border: 1px solid var(--ckpt-line);
   border-radius: 6px;
-  background: #fdfbf6;
+  background: var(--ckpt-panel-2);
   overflow: hidden;
-  transition: box-shadow .15s, transform .15s;
+  transition: box-shadow .15s, transform .15s, border-color .15s;
 }
 .listingCard:hover {
-  box-shadow: 0 4px 16px rgba(0,0,0,.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, .5);
+  border-color: var(--ckpt-cyan-dim);
   transform: translateY(-2px);
 }
 
@@ -469,19 +503,19 @@
   width: 100%;
   aspect-ratio: 4 / 3;
   object-fit: cover;
-  background: #ece7d8;
+  background: var(--ckpt-panel-3);
   display: block;
 }
 
 .listingImagePlaceholder {
   width: 100%;
   aspect-ratio: 4 / 3;
-  background: linear-gradient(135deg, #ece7d8, #d9d2bd);
+  background: linear-gradient(135deg, #1d2c3b, #111a24);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 2.5rem;
-  color: #8a8170;
+  color: var(--ckpt-text-dim);
 }
 
 .listingBody {
@@ -506,27 +540,28 @@
   padding: .15rem .5rem;
   border-radius: 3px;
 }
-.badgeBuy  { background: #e9f5d8; color: #3d6b2a; border: 1px solid #b6d97a; }
-.badgeSell { background: #fff3d6; color: #8a5a00; border: 1px solid #f0c97c; }
-.badgeCat  { background: #eef2f7; color: #46556a; border: 1px solid #c8d2df; }
+.badgeBuy  { background: rgba(79, 215, 115, .12); color: var(--ckpt-green); border: 1px solid rgba(79, 215, 115, .4); }
+.badgeSell { background: rgba(255, 178, 77, .12); color: var(--ckpt-amber); border: 1px solid rgba(255, 178, 77, .4); }
+.badgeCat  { background: rgba(69, 214, 230, .1); color: var(--ckpt-cyan); border: 1px solid rgba(69, 214, 230, .35); }
 
 .listingTitle {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: 1rem;
-  color: #2c4a1e;
+  font-family: 'Orbitron', sans-serif;
+  font-size: .95rem;
+  font-weight: 600;
+  color: var(--ckpt-text);
   margin: 0;
-  line-height: 1.25;
+  line-height: 1.3;
 }
 
 .listingMeta {
   font-size: .75rem;
-  color: #888;
+  color: var(--ckpt-text-dim);
   margin: 0;
 }
 
 .listingDesc {
   font-size: .85rem;
-  color: #555;
+  color: var(--ckpt-text-mut);
   margin: 0;
   line-height: 1.5;
   display: -webkit-box;
@@ -537,8 +572,8 @@
 
 .authTabs {
   display: flex;
-  border-bottom: 1px solid #e5e5e5;
-  background: #fafafa;
+  border-bottom: 1px solid var(--ckpt-line);
+  background: var(--ckpt-panel-2);
 }
 .authTab {
   flex: 1;
@@ -549,44 +584,44 @@
   font-family: inherit;
   font-size: .9rem;
   font-weight: 600;
-  color: #888;
+  color: var(--ckpt-text-dim);
   cursor: pointer;
   transition: color .15s, border-color .15s, background .15s;
 }
-.authTab:hover { color: #2c4a1e; background: #f0f4ea; }
+.authTab:hover { color: var(--ckpt-cyan); background: var(--ckpt-panel-3); }
 .authTabActive {
-  color: #2c4a1e;
-  border-bottom-color: #8fbc45;
-  background: #fff;
+  color: var(--ckpt-cyan);
+  border-bottom-color: var(--ckpt-cyan);
+  background: var(--ckpt-panel);
 }
 .authSwitch {
   margin: 1rem 0 0;
   text-align: center;
   font-size: .85rem;
-  color: #666;
+  color: var(--ckpt-text-mut);
 }
 .linkBtn {
   background: none;
   border: 0;
   padding: 0;
-  color: #2c4a1e;
+  color: var(--ckpt-cyan);
   font-weight: 600;
   font-family: inherit;
   font-size: inherit;
   text-decoration: underline;
   cursor: pointer;
 }
-.linkBtn:hover { color: #8fbc45; }
+.linkBtn:hover { color: var(--ckpt-amber); }
 
 /* ── Daily forecast rows (DailyForecast component) ─────────────── */
 
 .dailyForecast {
   display: flex;
   flex-direction: column;
-  border: 1px solid #e1dccc;
+  border: 1px solid var(--ckpt-line);
   border-radius: 6px;
   overflow: hidden;
-  background: #fff;
+  background: var(--ckpt-panel);
 }
 
 .dailyHeader {
@@ -595,13 +630,13 @@
   align-items: center;
   gap: 1rem;
   padding: .55rem 1rem;
-  background: #f7faf2;
-  border-bottom: 1px solid #e1dccc;
+  background: var(--ckpt-panel-2);
+  border-bottom: 1px solid var(--ckpt-line);
   font-family: 'Lato', sans-serif;
   font-size: .65rem;
   text-transform: uppercase;
   letter-spacing: .05em;
-  color: #6a7a55;
+  color: var(--ckpt-text-dim);
   font-weight: 700;
 }
 @media (max-width: 720px) {
@@ -609,7 +644,7 @@
 }
 
 .dailyRowWrap {
-  border-bottom: 1px solid #f0ebdc;
+  border-bottom: 1px solid var(--ckpt-line-soft);
 }
 .dailyRowWrap:last-child { border-bottom: none; }
 
@@ -620,16 +655,16 @@
   gap: 1rem;
   width: 100%;
   padding: .85rem 1rem;
-  background: #fff;
+  background: var(--ckpt-panel);
   border: 0;
   cursor: pointer;
   font-family: 'Lato', sans-serif;
-  color: #333;
+  color: var(--ckpt-text);
   text-align: left;
   transition: background .15s;
 }
-.dailyRow:hover { background: #f7faf2; }
-.dailyRowOpen   { background: #f0f7e6; }
+.dailyRow:hover { background: var(--ckpt-panel-3); }
+.dailyRowOpen   { background: var(--ckpt-panel-3); }
 
 @media (max-width: 720px) {
   .dailyRow {
@@ -648,7 +683,7 @@
     grid-area: meta;
     display: inline-block;
     font-size: .72rem;
-    color: #6a7a55;
+    color: var(--ckpt-text-dim);
     margin-right: .85rem;
   }
   .dailyChevron { grid-area: chev; }
@@ -657,7 +692,7 @@
 
 .dailyDay {
   font-weight: 700;
-  color: #2c4a1e;
+  color: var(--ckpt-text);
   font-size: .95rem;
 }
 .dailyIcon {
@@ -666,34 +701,36 @@
   line-height: 1;
 }
 .dailyTemps {
+  font-family: 'Geist Mono', monospace;
   font-size: 1rem;
   font-weight: 600;
 }
-.dailyHigh  { color: #b91c1c; }
-.dailyLow   { color: #1d4ed8; }
-.dailySep   { color: #aaa; margin: 0 .15rem; }
+.dailyHigh  { color: #ff7a7a; }
+.dailyLow   { color: #5aa6ff; }
+.dailySep   { color: var(--ckpt-text-dim); margin: 0 .15rem; }
 .dailyPrecip {
+  font-family: 'Geist Mono', monospace;
   font-size: .85rem;
-  color: #1d4ed8;
+  color: #5aa6ff;
   font-weight: 600;
 }
 .dailyShort {
   font-size: .85rem;
-  color: #444;
+  color: var(--ckpt-text-mut);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .dailyChevron {
-  color: #888;
+  color: var(--ckpt-text-dim);
   font-size: .8rem;
   text-align: center;
 }
 
 .dailyDetail {
   padding: .85rem 1.1rem 1.1rem;
-  background: #fdfaf4;
-  border-top: 1px solid #e1dccc;
+  background: var(--ckpt-panel-2);
+  border-top: 1px solid var(--ckpt-line);
   display: grid;
   gap: 1rem;
   grid-template-columns: 1fr 1fr;
@@ -705,7 +742,7 @@
   margin: .3rem 0 0;
   font-family: 'Lato', sans-serif;
   font-size: .85rem;
-  color: #444;
+  color: var(--ckpt-text-mut);
   line-height: 1.55;
 }
 .dailyDetailLabel {
@@ -714,7 +751,7 @@
   font-weight: 700;
   letter-spacing: .04em;
   text-transform: uppercase;
-  color: #6a7a55;
+  color: var(--ckpt-text-dim);
 }
 
 /* ── Drought + Soil Moisture component ─────────────────────────── */
@@ -727,11 +764,14 @@
   .droughtSoilGrid { grid-template-columns: 1fr; }
 }
 .subhead {
-  font-family: 'Playfair Display', Georgia, serif;
-  color: #2c4a1e;
-  font-size: 1.05rem;
+  font-family: 'Orbitron', sans-serif;
+  color: var(--ckpt-text);
+  font-size: .98rem;
+  font-weight: 600;
+  letter-spacing: .05em;
+  text-transform: uppercase;
   margin: 0 0 .35rem;
-  border-bottom: 2px solid #c9dfa3;
+  border-bottom: 1px solid var(--ckpt-amber);
   padding-bottom: .35rem;
 }
 .droughtImg {
@@ -739,8 +779,8 @@
   width: 100%;
   height: auto;
   border-radius: 4px;
-  border: 1px solid #ddd8cc;
-  background: #fdfaf4;
+  border: 1px solid var(--ckpt-line);
+  background: var(--ckpt-panel-2);
 }
 .moistureLatest {
   display: flex;
@@ -752,11 +792,11 @@
   grid-template-columns: 1fr auto;
   align-items: center;
   gap: .5rem;
-  font-family: 'Lato', sans-serif;
+  font-family: 'Geist Mono', monospace;
   font-size: .82rem;
 }
 .gaugeLabel {
-  color: #444;
+  color: var(--ckpt-text-mut);
   font-weight: 600;
   grid-column: 1 / 2;
 }
@@ -765,10 +805,11 @@
   font-weight: 700;
   text-align: right;
   min-width: 3em;
+  color: var(--ckpt-text);
 }
 .gaugeTrack {
   grid-column: 1 / 3;
-  background: #ece6d4;
+  background: var(--ckpt-panel-3);
   height: 8px;
   border-radius: 4px;
   overflow: hidden;
@@ -796,9 +837,9 @@
 }
 .moistureBarLabel {
   font-size: .6rem;
-  color: #888;
+  color: var(--ckpt-text-dim);
   margin-top: 3px;
-  font-family: 'Lato', sans-serif;
+  font-family: 'Geist Mono', monospace;
 }
 
 .weatherToolbar {
@@ -807,8 +848,8 @@
   justify-content: space-between;
   gap: 1rem;
   padding: .75rem 1rem;
-  background: #f7faf2;
-  border: 1px solid #d8e6c0;
+  background: var(--ckpt-panel-2);
+  border: 1px solid var(--ckpt-line);
   border-radius: 4px;
   margin-bottom: 1.25rem;
   flex-wrap: wrap;
@@ -819,14 +860,14 @@
   gap: .5rem;
   font-family: 'Lato', sans-serif;
   font-size: .92rem;
-  color: #2c4a1e;
+  color: var(--ckpt-text);
 }
-.weatherLocIcon { font-size: 1.05rem; }
-.weatherLocMuted { color: #888; font-style: italic; }
+.weatherLocIcon { font-size: 1.05rem; color: var(--ckpt-amber); }
+.weatherLocMuted { color: var(--ckpt-text-dim); font-style: italic; }
 .weatherCoords {
-  color: #888;
+  color: var(--ckpt-cyan);
   font-size: .78rem;
-  font-family: 'Courier New', monospace;
+  font-family: 'Geist Mono', monospace;
 }
 
 .postingAs {
@@ -835,20 +876,20 @@
   gap: .55rem;
   flex-wrap: wrap;
   padding: .65rem .85rem;
-  background: #f7faf2;
-  border: 1px dashed #c9dfa3;
+  background: var(--ckpt-panel-2);
+  border: 1px dashed var(--ckpt-line);
   border-radius: 4px;
   font-size: .88rem;
-  color: #2c4a1e;
+  color: var(--ckpt-text);
 }
 .postingAsLabel {
   text-transform: uppercase;
   font-size: .68rem;
   letter-spacing: .06em;
-  color: #6a7a55;
+  color: var(--ckpt-text-dim);
 }
 .postingAsLoc {
-  color: #6a7a55;
+  color: var(--ckpt-text-mut);
   font-size: .82rem;
 }
 
@@ -860,16 +901,16 @@
   flex-wrap: wrap;
 }
 .listingPrice {
-  font-family: 'Lato', sans-serif;
+  font-family: 'Geist Mono', monospace;
   font-size: 1rem;
-  font-weight: 700;
-  color: #2c4a1e;
+  font-weight: 600;
+  color: var(--ckpt-amber);
 }
 .listingQty {
-  font-family: 'Lato', sans-serif;
+  font-family: 'Geist Mono', monospace;
   font-size: .8rem;
-  color: #6a7a55;
-  background: #f0f7e6;
+  color: var(--ckpt-cyan);
+  background: rgba(69, 214, 230, .1);
   padding: .15rem .5rem;
   border-radius: 3px;
 }
@@ -880,36 +921,37 @@
   gap: .4rem;
   margin-top: .5rem;
   padding: .4rem .7rem;
-  background: #f0f7e6;
-  border: 1px solid #c9dfa3;
+  background: rgba(69, 214, 230, .08);
+  border: 1px solid var(--ckpt-cyan-dim);
   border-radius: 4px;
   font-size: .82rem;
-  color: #2c4a1e;
+  color: var(--ckpt-cyan);
   text-decoration: none;
   font-weight: 600;
-  transition: background .15s, border-color .15s;
+  transition: background .15s, border-color .15s, box-shadow .15s;
   align-self: flex-start;
 }
 .contactLine:hover {
-  background: #e1efc9;
-  border-color: #8fbc45;
+  background: rgba(69, 214, 230, .16);
+  border-color: var(--ckpt-cyan);
+  box-shadow: var(--ckpt-glow-cyan);
 }
 .contactLabel {
   text-transform: uppercase;
   font-size: .68rem;
   letter-spacing: .06em;
-  color: #6a7a55;
+  color: var(--ckpt-text-dim);
 }
 .contactValue {
-  font-family: 'Lato', sans-serif;
+  font-family: 'Geist Mono', monospace;
 }
 
 /* ── Buy/Sell: modal ── */
 .modalOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(20, 30, 15, .55);
-  backdrop-filter: blur(2px);
+  background: rgba(4, 8, 13, .7);
+  backdrop-filter: blur(3px);
   z-index: 1000;
   display: flex;
   align-items: flex-start;
@@ -925,11 +967,12 @@
 }
 
 .modalCard {
-  background: #fff;
+  background: var(--ckpt-panel);
+  border: 1px solid var(--ckpt-line);
   border-radius: 8px;
   width: 100%;
   max-width: 560px;
-  box-shadow: 0 12px 48px rgba(0,0,0,.3);
+  box-shadow: 0 16px 56px rgba(0, 0, 0, .7);
   overflow: hidden;
   animation: slideIn .2s ease-out;
 }
@@ -940,8 +983,8 @@
 }
 
 .modalHead {
-  background: linear-gradient(135deg, #2c4a1e, #3d6b2a);
-  border-bottom: 2px solid #8fbc45;
+  background: linear-gradient(180deg, #16222f, #111a24);
+  border-bottom: 1px solid var(--ckpt-amber);
   padding: .9rem 1.5rem;
   display: flex;
   align-items: center;
@@ -949,16 +992,18 @@
 }
 
 .modalHead h2 {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: 1.1rem;
-  color: #f0f7e6;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ckpt-text);
   margin: 0;
-  letter-spacing: .03em;
+  letter-spacing: .08em;
+  text-transform: uppercase;
 }
 
 .modalClose {
   background: transparent;
-  color: #f0f7e6;
+  color: var(--ckpt-text-mut);
   border: none;
   font-size: 1.5rem;
   line-height: 1;
@@ -966,7 +1011,7 @@
   padding: 0 .25rem;
   opacity: .8;
 }
-.modalClose:hover { opacity: 1; }
+.modalClose:hover { opacity: 1; color: var(--ckpt-amber); }
 
 .modalBody {
   padding: 1.5rem;
@@ -982,38 +1027,39 @@
 }
 
 .btnSecondary {
-  background: #fff;
-  color: #2c4a1e;
-  border: 1px solid #2c4a1e;
+  background: transparent;
+  color: var(--ckpt-text-mut);
+  border: 1px solid var(--ckpt-line);
   border-radius: 4px;
   padding: .6rem 1.25rem;
-  font-size: .9rem;
-  font-family: 'Lato', sans-serif;
-  font-weight: 700;
+  font-size: .82rem;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
   cursor: pointer;
-  letter-spacing: .04em;
+  letter-spacing: .06em;
+  text-transform: uppercase;
 }
-.btnSecondary:hover { background: #f4f0e8; }
+.btnSecondary:hover { background: var(--ckpt-panel-3); color: var(--ckpt-text); }
 
 /* ── Buy/Sell: file upload + preview ── */
 .fileDrop {
-  border: 2px dashed #b6c7a0;
+  border: 2px dashed var(--ckpt-line);
   border-radius: 6px;
   padding: 1.25rem;
   text-align: center;
-  background: #fafbf6;
+  background: var(--ckpt-panel-2);
   cursor: pointer;
   transition: border-color .15s, background .15s;
 }
 .fileDrop:hover {
-  border-color: #8fbc45;
-  background: #f4f9ea;
+  border-color: var(--ckpt-cyan);
+  background: var(--ckpt-panel-3);
 }
 .fileDrop input { display: none; }
 
 .fileDropHint {
   font-size: .82rem;
-  color: #6a7a55;
+  color: var(--ckpt-text-dim);
   margin: 0;
 }
 
@@ -1022,7 +1068,7 @@
   margin-top: .5rem;
   border-radius: 6px;
   overflow: hidden;
-  border: 1px solid #ddd8cc;
+  border: 1px solid var(--ckpt-line);
 }
 
 .imagePreview {
@@ -1036,15 +1082,15 @@
   position: absolute;
   top: .5rem;
   right: .5rem;
-  background: rgba(0,0,0,.65);
+  background: rgba(0, 0, 0, .7);
   color: #fff;
-  border: none;
+  border: 1px solid var(--ckpt-line);
   border-radius: 4px;
   padding: .3rem .6rem;
   font-size: .75rem;
   cursor: pointer;
 }
-.imageRemove:hover { background: rgba(0,0,0,.85); }
+.imageRemove:hover { background: rgba(255, 92, 92, .85); }
 
 .modalForm {
   display: flex;
@@ -1066,14 +1112,14 @@
   position: sticky;
   top: 0;
   z-index: 6;
-  background: #fff;
+  background: var(--ckpt-panel);
   padding: .75rem 1.5rem .6rem;
-  border-bottom: 1px solid #e5e5e5;
+  border-bottom: 1px solid var(--ckpt-line);
 }
 .stickyWeekLabel {
   font-size: .7rem;
   text-transform: uppercase;
-  color: #6a7a55;
+  color: var(--ckpt-text-dim);
   letter-spacing: .05em;
   margin-bottom: .35rem;
 }
@@ -1096,7 +1142,7 @@
 .stickyColHead {
   position: sticky;
   top: 64px;
-  background: #f7faf2;
+  background: var(--ckpt-panel-2);
   white-space: nowrap;
   z-index: 4;
 }
@@ -1106,7 +1152,7 @@
   position: sticky;
   top: 64px;
   left: 0;
-  background: #f7faf2;
+  background: var(--ckpt-panel-2);
   z-index: 5;
 }
 
@@ -1114,6 +1160,6 @@
 .stickyRowHead {
   position: sticky;
   left: 0;
-  background: #fff;
+  background: var(--ckpt-panel);
   z-index: 2;
 }
