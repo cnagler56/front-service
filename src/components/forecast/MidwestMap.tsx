@@ -153,10 +153,10 @@ function fmtBu(v: number): string {
 /* ── Per-location average deltas ──────────────────────────────── */
 
 /**
- * Mean (current − previous) across the next 5 forecast days, skipping today
- * (day index 0) — today's forecast can swing dramatically intraday in ways that
- * aren't meaningful. We average both High and Low deltas together for the
- * temperature view, and average precip% deltas for the precipitation view.
+ * Mean (current − previous) across days 2–7, skipping today (day index 0) —
+ * today's forecast can swing dramatically intraday in ways that aren't
+ * meaningful. We average both High and Low deltas together for the temperature
+ * view, and average precip% deltas for the precipitation view.
  * Returns null if there's not enough data.
  */
 function avgTempDelta(curr: ForecastSnapshot | null, prev: ForecastSnapshot | null): number | null {
@@ -164,7 +164,7 @@ function avgTempDelta(curr: ForecastSnapshot | null, prev: ForecastSnapshot | nu
   const prevMap = new Map<string, NonNullable<ForecastSnapshot['days']>[number]>();
   for (const d of prev.days) prevMap.set(d.day, d);
   let sum = 0, n = 0;
-  for (const d of curr.days.slice(1, 6)) {
+  for (const d of curr.days.slice(1, 7)) {
     const p = prevMap.get(d.day);
     if (!p) continue;
     if (d.high != null && p.high != null) { sum += d.high - p.high; n++; }
@@ -178,7 +178,7 @@ function avgPrecipDelta(curr: ForecastSnapshot | null, prev: ForecastSnapshot | 
   const prevMap = new Map<string, NonNullable<ForecastSnapshot['days']>[number]>();
   for (const d of prev.days) prevMap.set(d.day, d);
   let sum = 0, n = 0;
-  for (const d of curr.days.slice(1, 6)) {
+  for (const d of curr.days.slice(1, 7)) {
     const p = prevMap.get(d.day);
     if (!p) continue;
     if (d.precipChance != null && p.precipChance != null) {
