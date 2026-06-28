@@ -4,6 +4,7 @@ import Link from 'next/link';
 import SupplyDemandBox from '@/src/components/commodity/SupplyDemandBox';
 import ConabPanel from './ConabPanel';
 import SouthAmericaMap from './SouthAmericaMap';
+import CropCalendarPanel from './CropCalendarPanel';
 import styles from '@/src/styles/farm.module.css';
 
 interface Props {
@@ -69,6 +70,9 @@ export default function SouthAmericaPage({ commodity, commodityLabel, regions }:
 
       {/* Production map: Brazil by state + Argentina/Paraguay national. */}
       <SouthAmericaMap commodity={commodity} commodityLabel={commodityLabel} />
+
+      {/* Planting / harvest calendar for the SA crops (this crop's rows emphasized). */}
+      <CropCalendarPanel commodity={commodity} />
     </div>
   );
 }
