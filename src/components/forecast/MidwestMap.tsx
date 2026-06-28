@@ -281,7 +281,7 @@ function buildDeltas(curr: ForecastSnapshot | null, prev: ForecastSnapshot | nul
   if (!curr?.days) return [];
   const prevMap = new Map<string, NonNullable<ForecastSnapshot['days']>[number]>();
   if (prev?.days) for (const d of prev.days) prevMap.set(d.day, d);
-  return curr.days.slice(0, 5).map(d => {
+  return curr.days.slice(0, 7).map(d => {
     const p = prevMap.get(d.day);
     return {
       day: d.day,
