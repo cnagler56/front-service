@@ -17,14 +17,21 @@ function parseSnap(json: string | null | undefined): ForecastSnapshot | null {
   catch { return null; }
 }
 
-/** "2026-05-31T12:34:56" → "May 31, 12:34 PM". Falls back to raw string. */
+/**
+ * "2026-05-31T12:34:56" → "May 31, 7:34 AM CDT" in the viewer's local time.
+ * The API serializes naive UTC timestamps (the server runs in UTC), so when the
+ * string carries no timezone we treat it as UTC before converting — otherwise the
+ * browser parses it as local time and the clock is off by the UTC offset.
+ */
 function fmtTs(iso: string | null | undefined): string {
   if (!iso) return 'never';
-  const d = new Date(iso);
+  const hasZone = /([zZ]|[+-]\d{2}:?\d{2})$/.test(iso);
+  const d = new Date(hasZone ? iso : `${iso}Z`);
   if (isNaN(d.getTime())) return iso;
   return d.toLocaleString(undefined, {
     month: 'short', day: 'numeric',
     hour: 'numeric', minute: '2-digit',
+    timeZoneName: 'short',
   });
 }
 
