@@ -7,6 +7,7 @@ import Footer from "@/src/components/Footer/Footer";
 import { UserProvider } from "@/src/lib/UserContext";
 import ServiceWorkerRegister from "@/src/components/pwa/ServiceWorkerRegister";
 import InstallPrompt from "@/src/components/pwa/InstallPrompt";
+import { Analytics } from "@vercel/analytics/next";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -49,6 +50,7 @@ export default function RootLayout({
           {children}
           <Footer />
         </UserProvider>
+        <Analytics />
       </body>
     </html>
   );
