@@ -809,7 +809,6 @@ function MarkerKey({ metric }: { metric: Metric }) {
     }}>
       <Swatch fill={changeColor} stroke="#fff" strokeWidth={2} label="Change (shaded by amount)" />
       <Swatch fill="transparent" stroke="#a7ad97" strokeWidth={1.5} label="No change" />
-      <Swatch fill="transparent" stroke="#b8bdab" strokeWidth={1.5} dash="2 2" label="Awaiting first comparison" />
     </div>
   );
 }
