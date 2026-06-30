@@ -19,6 +19,7 @@ interface Props {
   commodity: string; // NASS / WASDE code: "CORN" / "SOYBEANS" / "SOYBEAN_MEAL" …
   commodityLabel: string; // "Corn" / "Soybeans" / "Soybean Meal"
   pricesGroupName: string; // matches CommodityGroup.name in /prices
+  secondaryPricesGroupName?: string; // optional 2nd quote shown under the main one (e.g. "KC Wheat")
   crushProduct?: boolean; // meal/oil: no NASS yield or crop progress, so hide those panels
   yieldUnit?: string; // NASS yield unit — "bu/acre" for grains, "lb/acre" for cotton
 }
@@ -135,11 +136,13 @@ export default function CommodityDashboard({
   commodity,
   commodityLabel,
   pricesGroupName,
+  secondaryPricesGroupName,
   crushProduct = false,
   yieldUnit = "bu/acre",
 }: Props) {
   const { user } = useUser();
   const [prices, setPrices] = useState<CommodityGroup | null>(null);
+  const [secondaryPrices, setSecondaryPrices] = useState<CommodityGroup | null>(null);
   const [yieldReport, setYieldReport] = useState<UsdaYieldReport | null>(null);
   const [progress, setProgress] = useState<CropProgressData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -167,6 +170,11 @@ export default function CommodityDashboard({
       .then(([pricesAll, yieldData, cropProgress]) => {
         if (cancelled) return;
         setPrices(pricesAll.find((g) => g.name === pricesGroupName) ?? null);
+        setSecondaryPrices(
+          secondaryPricesGroupName
+            ? pricesAll.find((g) => g.name === secondaryPricesGroupName) ?? null
+            : null,
+        );
         setYieldReport(yieldData);
         setProgress(cropProgress);
       })
@@ -181,7 +189,7 @@ export default function CommodityDashboard({
     return () => {
       cancelled = true;
     };
-  }, [commodity, commodityLabel, pricesGroupName, crushProduct]);
+  }, [commodity, commodityLabel, pricesGroupName, secondaryPricesGroupName, crushProduct]);
 
   // ── Derived: yield headline ───────────────────────────────────────────────
   const yieldHeadline = useMemo(() => {
@@ -335,6 +343,25 @@ export default function CommodityDashboard({
                       }}
                     >
                       {fmtAsOf(frontPrice.asOf)} · ~10-min delayed
+                    </div>
+                  )}
+
+                  {/* Optional second class (e.g. KC wheat) under the main quote. */}
+                  {secondaryPrices?.contracts?.[0] && (
+                    <div style={{ marginTop: ".75rem", paddingTop: ".6rem", borderTop: "1px solid #ece6d4" }}>
+                      <div className={styles.frontLabel}>
+                        {secondaryPrices.name} · {secondaryPrices.contracts[0].expiration} (front)
+                      </div>
+                      <div style={{ display: "flex", alignItems: "baseline", gap: ".5rem", marginTop: ".15rem" }}>
+                        <span style={{ fontSize: "1.4rem", fontWeight: 700, color: "#1a2e0f", fontVariantNumeric: "tabular-nums" }}>
+                          {fmtPrice(secondaryPrices.contracts[0].last)}
+                        </span>
+                        <span className={styles.unitLabel}>{secondaryPrices.unit}</span>
+                        <ChangePill
+                          change={secondaryPrices.contracts[0].change ?? null}
+                          pct={secondaryPrices.contracts[0].changePercent ?? null}
+                        />
+                      </div>
                     </div>
                   )}
                 </div>

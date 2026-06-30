@@ -79,11 +79,20 @@
 }
 
 /* ── Commodity price cards (CommodityPrices) ── */
+/* Single horizontal row that scrolls — never wraps to a second line. */
 .priceGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  display: flex;
   gap: 1rem;
   width: 100%;
+  overflow-x: auto;
+  padding-bottom: .5rem;            /* room for the scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: #c9dfa3 transparent;
+}
+.priceGrid::-webkit-scrollbar { height: 8px; }
+.priceGrid::-webkit-scrollbar-thumb {
+  background: #c9dfa3;
+  border-radius: 4px;
 }
 
 /* "Jul 2026 (front)" line just under the commodity name */
@@ -134,6 +143,7 @@
   white-space: nowrap;
 }
 .priceCard {
+  flex: 0 0 240px;                  /* fixed width → row scrolls, never wraps */
   background: #fdfaf4;
   border: 1px solid #e1dccc;
   border-radius: 6px;
