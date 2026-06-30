@@ -293,6 +293,9 @@ export const NavigationBar = () => {
                   <Link href="/admin/wasde">WASDE Upload</Link>
                 </li>
                 <li>
+                  <Link href="/admin/report-dates">Report Dates</Link>
+                </li>
+                <li>
                   <Link href="/feedback">📬 Feedback</Link>
                 </li>
               </ul>
