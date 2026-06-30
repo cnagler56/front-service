@@ -10,6 +10,7 @@ export default function WheatPage() {
         commodity="WHEAT"
         commodityLabel="Wheat"
         pricesGroupName="Wheat"
+        secondaryPricesGroupName="KC Wheat"
       />
     </div>
   );
