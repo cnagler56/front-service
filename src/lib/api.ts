@@ -523,6 +523,13 @@ export interface Announcement {
   updatedAt?: string;
 }
 
+/** One admin-entered USDA report release date. */
+export interface ReportReleaseDate {
+  id?: number;
+  reportKey: string;    // "CROP_PRODUCTION" | "WASDE" | "GRAIN_STOCKS"
+  releaseDate: string;  // ISO date "2026-07-10"
+}
+
 /**
  * Default fetch options for every API call — `credentials: 'include'` is
  * what makes the browser send the session cookie cross-origin (Next.js on
@@ -715,6 +722,22 @@ export const api = {
   },
 
   getNews: () => get<NewsItem[]>('/api/news'),
+
+  // Admin-managed USDA report release dates (drive the release-day refresh burst).
+  getReportDates: () => get<ReportReleaseDate[]>('/api/admin/report-dates'),
+  saveReportDates: async (reportKey: string, dates: string[]): Promise<ReportReleaseDate[]> => {
+    const res = await fetch(`${BASE}/api/admin/report-dates`, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reportKey, dates }),
+    });
+    if (!res.ok) {
+      let msg = `Save failed (${res.status})`;
+      try { const j = await res.json(); msg = j.message || j.error || msg; } catch { /* ignore */ }
+      throw new Error(msg);
+    }
+    return res.json() as Promise<ReportReleaseDate[]>;
+  },
 
   // Home-page announcement: public GET, plus admin GET (pre-fill) and POST (upsert).
   getAnnouncement: () => get<Announcement>('/api/announcement'),
