@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import YieldEstimatorPanel from '@/src/components/usdaReports/YieldEstimatorPanel';
+import { api, OpenRound } from '@/src/lib/api';
 import styles from '@/src/styles/farm.module.css';
 
 interface ChallengeCommodity {
@@ -72,6 +73,9 @@ export default function UsdaChallengePage() {
         </p>
       </div>
 
+      {/* ── Open-round banner (which report you're guessing now) ─ */}
+      <RoundBanner />
+
       {/* ── Commodity selector ───────────────────────────────── */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.5rem', marginBottom: '1rem' }}>
         {COMMODITIES.map(c => (
@@ -94,6 +98,46 @@ export default function UsdaChallengePage() {
         commodityLabel={commodity.label}
         unit={commodity.unit}
       />
+    </div>
+  );
+}
+
+/** "2026-08-12" → "Aug 12, 2026". */
+function fmtDate(iso: string): string {
+  const d = new Date(`${iso}T00:00:00`);
+  return isNaN(d.getTime()) ? iso
+    : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+/**
+ * Tells farmers which Crop Production report their guess counts toward right
+ * now. The round is derived from the admin-maintained release dates (next
+ * release on/after today), so it rolls July → August → September on its own.
+ * Under fresh-per-report scoring, earlier rounds' guesses don't carry forward,
+ * so this makes the current round explicit and prompts a re-guess each month.
+ */
+function RoundBanner() {
+  const [round, setRound] = useState<OpenRound | null>(null);
+
+  useEffect(() => {
+    api.getOpenRound().then(setRound).catch(() => setRound(null));
+  }, []);
+
+  if (!round || !round.scheduled || !round.label) return null;
+
+  return (
+    <div style={{
+      display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '.5rem',
+      background: '#f0f7e6', border: '1px solid #c9dfa3', borderLeft: '4px solid #8fbc45',
+      borderRadius: 6, padding: '.75rem 1rem', marginBottom: '1rem',
+      fontFamily: 'Lato, sans-serif',
+    }}>
+      <span style={{ fontSize: '1.1rem', lineHeight: 1 }} aria-hidden>🌽</span>
+      <span style={{ color: '#2c4a1e', fontSize: '.9rem', lineHeight: 1.5 }}>
+        <strong>Now guessing: the {round.label} report.</strong>{' '}
+        {round.closesOn && <>Lock in or update your estimate before it publishes {fmtDate(round.closesOn)}. </>}
+        Each report is scored on its own — last round&rsquo;s guesses don&rsquo;t carry over.
+      </span>
     </div>
   );
 }
