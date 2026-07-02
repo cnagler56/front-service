@@ -61,7 +61,7 @@ function useInView<T extends HTMLElement>(
    the viewport before they appear, which forces a bit of scrolling per item. */
 function RevealRow({ winner, children }: { winner?: boolean; children: ReactNode }) {
   const [ref, inView] = useInView<HTMLTableRowElement>({
-    threshold: 0, rootMargin: '0px 0px -35% 0px',
+    threshold: 0, rootMargin: '0px 0px -12% 0px',
   });
   return (
     <tr ref={ref} className={`res-row ${inView ? 'res-row-in' : ''} ${winner ? 'winner' : ''}`}>
@@ -200,13 +200,18 @@ export default function UsdaResultsPage() {
                   title="By Group"
                   firstColHeader="Group"
                   rows={data.byGroup}
+                  usdaYield={data.usdaYield}
                 />
                 <RankBoard
                   title="By State"
                   firstColHeader="State"
-                  rows={data.byState.slice(0, 10)}
+                  rows={data.byState}
+                  usdaYield={data.usdaYield}
+                  limit={10}
                 />
                 <IndividualsBoard rows={data.topIndividuals} usdaYield={data.usdaYield} />
+                {/* Scroll room so the last row (#1) can clear the reveal trigger. */}
+                <div aria-hidden style={{ height: '24vh' }} />
               </>
             )}
           </div>
@@ -282,11 +287,19 @@ function ScrollCue() {
 
 /* ── Ranked group/state board ────────────────────────────────────── */
 function RankBoard({
-  title, firstColHeader, rows,
+  title, firstColHeader, rows, usdaYield, limit,
 }: {
   title: string; firstColHeader: string; rows: ResultsRankRow[];
+  usdaYield: number; limit?: number;
 }) {
   const [ref, inView] = useInView<HTMLDivElement>();
+  // Rank by how close the group's AVERAGE estimate is to the USDA number
+  // (not the backend's mean-of-individual-misses), then keep the best `limit`.
+  const ranked = rows
+    .map(r => ({ r, miss: Math.abs(r.avgEstimate - usdaYield) }))
+    .sort((a, b) => a.miss - b.miss)
+    .slice(0, limit ?? rows.length)
+    .map((x, i) => ({ ...x, rank: i + 1 }));
   return (
     <div ref={ref} className={`reveal ${inView ? 'reveal-in' : ''}`} style={{ marginBottom: '3rem' }}>
       <div className={styles.section}>
@@ -301,14 +314,14 @@ function RankBoard({
                 <th>Rank</th>
                 <th>{firstColHeader}</th>
                 <th>Avg Estimate (bu/acre)</th>
-                <th>Avg Miss</th>
+                <th>Miss vs USDA</th>
                 <th>Guesses</th>
               </tr>
             </thead>
             <tbody>
               {/* Count down: worst rank at top, #1 at the bottom. Each row
                   reveals as it scrolls up into view. */}
-              {rows.map((r, i) => ({ r, rank: i + 1 })).reverse().map(({ r, rank }) => {
+              {[...ranked].reverse().map(({ r, miss, rank }) => {
                 const isWinner = rank === 1;
                 return (
                   <RevealRow key={r.label} winner={isWinner}>
@@ -316,7 +329,7 @@ function RankBoard({
                     <td style={{ fontWeight: 700, color: '#2c4a1e' }}>{r.label}</td>
                     <td style={{ fontVariantNumeric: 'tabular-nums' }}>{r.avgEstimate.toFixed(1)}</td>
                     <td style={{ fontWeight: 600, color: isWinner ? '#2c7a1e' : '#555', fontVariantNumeric: 'tabular-nums' }}>
-                      ±{r.avgError.toFixed(1)}
+                      ±{miss.toFixed(1)}
                     </td>
                     <td style={{ color: '#888', fontSize: '.82rem' }}>{r.count}</td>
                   </RevealRow>
