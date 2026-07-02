@@ -42,7 +42,8 @@ const last = ['Johnson', 'Anderson', 'Nelson', 'Petersen', 'Schmidt', 'Meyer', '
 // Weighted toward the core Corn Belt so the By-State board has depth where it should.
 const stateW = { IA: 6, IL: 5, IN: 4, NE: 4, MN: 4, OH: 3, MO: 3, SD: 2, KS: 2, WI: 2, ND: 1 };
 const states = Object.entries(stateW).flatMap(([s, w]) => Array(w).fill(s));
-const intW = { Farmer: 8, Agronomist: 2, 'Grain Merchandiser': 2, 'Market Analyst': 2, Trader: 2, 'Ag Lender': 1, 'Seed Dealer': 1, Extension: 1, 'Elevator Manager': 1, Student: 1 };
+// Match the app's signup interest options. Weights bias toward the common ones.
+const intW = { Farmer: 8, Retired: 2, Investor: 2, Analyst: 2, Student: 1, Other: 1 };
 const interests = Object.entries(intW).flatMap(([s, w]) => Array(w).fill(s));
 
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
