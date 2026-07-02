@@ -530,6 +530,13 @@ export interface ReportReleaseDate {
   releaseDate: string;  // ISO date "2026-07-10"
 }
 
+/** The open Crop Production guessing round for the challenge banner. */
+export interface OpenRound {
+  label: string | null;     // month name of the next report, e.g. "August"
+  closesOn: string | null;  // ISO date the report publishes, e.g. "2026-08-12"
+  scheduled: boolean;       // false when no upcoming date is set
+}
+
 /**
  * Default fetch options for every API call — `credentials: 'include'` is
  * what makes the browser send the session cookie cross-origin (Next.js on
@@ -725,6 +732,8 @@ export const api = {
 
   // Admin-managed USDA report release dates (drive the release-day refresh burst).
   getReportDates: () => get<ReportReleaseDate[]>('/api/admin/report-dates'),
+  // Public: which Crop Production report the challenge is currently guessing.
+  getOpenRound: () => get<OpenRound>('/api/report-dates/open-round'),
   saveReportDates: async (reportKey: string, dates: string[]): Promise<ReportReleaseDate[]> => {
     const res = await fetch(`${BASE}/api/admin/report-dates`, {
       method: 'POST', credentials: 'include',
