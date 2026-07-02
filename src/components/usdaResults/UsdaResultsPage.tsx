@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import Link from 'next/link';
 import { api, UsdaResults, ResultsRankRow, ResultsIndividual } from '@/src/lib/api';
 import styles from '@/src/styles/farm.module.css';
@@ -12,8 +12,6 @@ const COMMODITIES: Commodity[] = [
   { key: 'SOYBEANS', label: 'Soybeans', icon: '🫘' },
   { key: 'WHEAT',    label: 'Wheat',    icon: '🌾' },
 ];
-
-const MEDALS = ['🥇', '🥈', '🥉'];
 
 /** "AUG" → "Aug forecast", "YEAR" → "final". */
 function periodLabel(p: string): string {
@@ -36,7 +34,9 @@ function formatCutoff(iso: string | null): string {
 /* ── Reveal plumbing ──────────────────────────────────────────────
    A one-shot IntersectionObserver hook. Each board stays hidden until
    it's scrolled ~15% into view, then it (and its rows) animate in. */
-function useInView<T extends HTMLElement>(): [RefObject<T | null>, boolean] {
+function useInView<T extends HTMLElement>(
+  opts: IntersectionObserverInit = { threshold: 0.15, rootMargin: '0px 0px -8% 0px' },
+): [RefObject<T | null>, boolean] {
   const ref = useRef<T | null>(null);
   const [inView, setInView] = useState(false);
   useEffect(() => {
@@ -47,12 +47,27 @@ function useInView<T extends HTMLElement>(): [RefObject<T | null>, boolean] {
       entries => entries.forEach(e => {
         if (e.isIntersecting) { setInView(true); io.disconnect(); }
       }),
-      { threshold: 0.15, rootMargin: '0px 0px -8% 0px' },
+      opts,
     );
     io.observe(el);
     return () => io.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return [ref, inView];
+}
+
+/* A single result row that reveals only once it scrolls up into view, so the
+   list is uncovered one item at a time. Rows must be ~a third of the way up
+   the viewport before they appear, which forces a bit of scrolling per item. */
+function RevealRow({ winner, children }: { winner?: boolean; children: ReactNode }) {
+  const [ref, inView] = useInView<HTMLTableRowElement>({
+    threshold: 0, rootMargin: '0px 0px -35% 0px',
+  });
+  return (
+    <tr ref={ref} className={`res-row ${inView ? 'res-row-in' : ''} ${winner ? 'winner' : ''}`}>
+      {children}
+    </tr>
+  );
 }
 
 /** requestAnimationFrame count-up; starts when `run` flips true. */
@@ -189,7 +204,7 @@ export default function UsdaResultsPage() {
                 <RankBoard
                   title="By State"
                   firstColHeader="State"
-                  rows={data.byState}
+                  rows={data.byState.slice(0, 10)}
                 />
                 <IndividualsBoard rows={data.topIndividuals} usdaYield={data.usdaYield} />
               </>
@@ -291,21 +306,22 @@ function RankBoard({
               </tr>
             </thead>
             <tbody>
-              {rows.map((r, i) => (
-                <tr
-                  key={r.label}
-                  className={`res-row ${inView ? 'res-row-in' : ''} ${i === 0 ? 'winner' : ''}`}
-                  style={{ transitionDelay: `${i * 110}ms`, animationDelay: `${i * 110 + 300}ms` }}
-                >
-                  <td style={{ fontWeight: 700 }}>{MEDALS[i] ?? `#${i + 1}`}</td>
-                  <td style={{ fontWeight: 700, color: '#2c4a1e' }}>{r.label}</td>
-                  <td style={{ fontVariantNumeric: 'tabular-nums' }}>{r.avgEstimate.toFixed(1)}</td>
-                  <td style={{ fontWeight: 600, color: i === 0 ? '#2c7a1e' : '#555', fontVariantNumeric: 'tabular-nums' }}>
-                    ±{r.avgError.toFixed(1)}
-                  </td>
-                  <td style={{ color: '#888', fontSize: '.82rem' }}>{r.count}</td>
-                </tr>
-              ))}
+              {/* Count down: worst rank at top, #1 at the bottom. Each row
+                  reveals as it scrolls up into view. */}
+              {rows.map((r, i) => ({ r, rank: i + 1 })).reverse().map(({ r, rank }) => {
+                const isWinner = rank === 1;
+                return (
+                  <RevealRow key={r.label} winner={isWinner}>
+                    <td style={{ fontWeight: 700 }}>#{rank}</td>
+                    <td style={{ fontWeight: 700, color: '#2c4a1e' }}>{r.label}</td>
+                    <td style={{ fontVariantNumeric: 'tabular-nums' }}>{r.avgEstimate.toFixed(1)}</td>
+                    <td style={{ fontWeight: 600, color: isWinner ? '#2c7a1e' : '#555', fontVariantNumeric: 'tabular-nums' }}>
+                      ±{r.avgError.toFixed(1)}
+                    </td>
+                    <td style={{ color: '#888', fontSize: '.82rem' }}>{r.count}</td>
+                  </RevealRow>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -321,7 +337,6 @@ function IndividualsBoard({
   rows: ResultsIndividual[]; usdaYield: number;
 }) {
   const [ref, inView] = useInView<HTMLDivElement>();
-  const n = rows.length;
   return (
     <div ref={ref} className={`reveal ${inView ? 'reveal-in' : ''}`} style={{ marginBottom: '2rem' }}>
       <div className={styles.section}>
@@ -344,24 +359,21 @@ function IndividualsBoard({
               </tr>
             </thead>
             <tbody>
-              {rows.map((r, i) => {
-                // reverse stagger: last place reveals first, #1 reveals last
-                const delay = (n - 1 - i) * 200;
+              {/* Count down: #10 at top, #1 at the bottom. Each row reveals as
+                  it scrolls up into view, so you scroll your way down to #1. */}
+              {rows.map((r, i) => ({ r, rank: i + 1 })).reverse().map(({ r, rank }) => {
+                const isWinner = rank === 1;
                 return (
-                  <tr
-                    key={`${r.name}-${i}`}
-                    className={`res-row ${inView ? 'res-row-in' : ''} ${i === 0 ? 'winner' : ''}`}
-                    style={{ transitionDelay: `${delay}ms`, animationDelay: `${delay + 200}ms` }}
-                  >
-                    <td style={{ fontWeight: 700 }}>{MEDALS[i] ?? `#${i + 1}`}</td>
+                  <RevealRow key={`${r.name}-${rank}`} winner={isWinner}>
+                    <td style={{ fontWeight: 700 }}>#{rank}</td>
                     <td style={{ fontWeight: 700, color: '#2c4a1e' }}>{r.name}</td>
                     <td>{r.state}</td>
                     <td style={{ color: '#666' }}>{r.group}</td>
                     <td style={{ fontVariantNumeric: 'tabular-nums' }}>{r.estimate.toFixed(1)}</td>
-                    <td style={{ fontWeight: 600, color: i === 0 ? '#2c7a1e' : '#555', fontVariantNumeric: 'tabular-nums' }}>
+                    <td style={{ fontWeight: 600, color: isWinner ? '#2c7a1e' : '#555', fontVariantNumeric: 'tabular-nums' }}>
                       ±{r.error.toFixed(1)}
                     </td>
-                  </tr>
+                  </RevealRow>
                 );
               })}
             </tbody>
