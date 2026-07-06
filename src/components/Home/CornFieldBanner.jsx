@@ -3,12 +3,16 @@ import React from 'react';
 import s from './CornFieldBanner.module.css';
 
 /**
- * Decorative animated banner for the home page: a row of corn stalks sprouts
- * from the soil (staggered, like a real field coming in), leaves unfurl,
- * tassels pop, and then the whole field sways gently in the breeze.
+ * Decorative animated banner for the home page: a two-row corn field sprouts
+ * from the soil (staggered, like a real stand coming in), leaf blades unfurl,
+ * tassels and ears fill in, and then the field sways gently in the breeze.
  *
  * Pure SVG + CSS — no libraries, nothing to load. Users with
  * prefers-reduced-motion just see the fully grown field, no animation.
+ *
+ * Styling notes: leaves are filled, tapered blades (not strokes), stalks taper
+ * toward the tassel, and the palette is muted olive/straw — deliberately more
+ * "field at 7pm" than clip art.
  */
 
 /* Deterministic pseudo-random (seeded) so the server and client render the
@@ -23,7 +27,7 @@ function mulberry32(seed) {
 }
 
 /* Two rows for a full-field look: a smaller, hazier back row for depth and a
-   dense front row. Each plant: x, base y, size k, stagger d, tone, ear. */
+   dense front row. Each plant: x, base y, size k, lean r, stagger d, tone, ear. */
 function makeRow({ seed, count, step, x0, y, kMin, kMax, earEvery, back }) {
   const rnd = mulberry32(seed);
   const plants = [];
@@ -32,6 +36,7 @@ function makeRow({ seed, count, step, x0, y, kMin, kMax, earEvery, back }) {
       x: Math.round(x0 + i * step + (rnd() - 0.5) * step * 0.5),
       y,
       k: +(kMin + rnd() * (kMax - kMin)).toFixed(2),
+      r: +(rnd() * 5 - 2.5).toFixed(1),
       d: +(rnd() * 1.6).toFixed(2),
       tone: i % 2,
       ear: !back && i % earEvery === 2,
@@ -41,53 +46,63 @@ function makeRow({ seed, count, step, x0, y, kMin, kMax, earEvery, back }) {
   return plants;
 }
 
-const BACK_ROW  = makeRow({ seed: 7,  count: 20, step: 61, x0: 18, y: 145, kMin: 0.48, kMax: 0.62, earEvery: 99, back: true });
+const BACK_ROW  = makeRow({ seed: 7,  count: 20, step: 61, x0: 18, y: 146, kMin: 0.48, kMax: 0.62, earEvery: 99, back: true });
 const FRONT_ROW = makeRow({ seed: 21, count: 19, step: 64, x0: 40, y: 150, kMin: 0.84, kMax: 1.08, earEvery: 4,  back: false });
 
+/* Muted, natural greens — two tones so neighbouring plants differ subtly. */
 const TONES = [
-  { stalk: '#2c4a1e', leaf: '#3d6b2a' },
-  { stalk: '#456f2e', leaf: '#5c8f3d' },
+  { stalk: '#46612e', leafA: '#4c6d33', leafB: '#5c7f40' },
+  { stalk: '#4f6c33', leafA: '#567738', leafB: '#678a47' },
 ];
 
-function CornPlant({ x, y, k, d, tone, ear, back }) {
+function CornPlant({ x, y, k, r, d, tone, ear, back }) {
   const c = TONES[tone];
   return (
-    <g transform={`translate(${x},${y}) scale(${k})`} opacity={back ? 0.55 : 1}>
+    <g transform={`translate(${x},${y}) rotate(${r}) scale(${k})`} opacity={back ? 0.5 : 1}>
       {/* sway wrapper — rotates around the soil point after growth */}
       <g className={s.sway} style={{ '--d': `${d}s` }}>
         {/* grow wrapper — the whole plant rises out of the ground */}
         <g className={s.grow}>
-          {/* stalk */}
+          {/* stalk — filled and tapered, wider at the soil */}
           <path
             className={s.stalk}
-            d="M0,0 C1.5,-30 -1.5,-58 0,-88"
-            stroke={c.stalk} strokeWidth="5" strokeLinecap="round" fill="none"
+            d="M-2.6,0 C-2.3,-28 -1.7,-58 -1,-88 L1,-88 C1.7,-58 2.3,-28 2.6,0 Z"
+            fill={c.stalk}
           />
-          {/* leaves — arch out from the stalk and droop at the tip, like corn */}
-          <path className={`${s.leaf} ${s.leafL} ${s.leaf1}`}
-            d="M0,-26 C-12,-36 -27,-40 -35,-24" stroke={c.leaf}
-            strokeWidth="5" strokeLinecap="round" fill="none" />
-          <path className={`${s.leaf} ${s.leafR} ${s.leaf2}`}
-            d="M0,-40 C12,-50 26,-54 33,-37" stroke={c.leaf}
-            strokeWidth="4.5" strokeLinecap="round" fill="none" />
-          <path className={`${s.leaf} ${s.leafL} ${s.leaf3}`}
-            d="M0,-55 C-10,-64 -21,-67 -28,-53" stroke={c.leaf}
-            strokeWidth="4" strokeLinecap="round" fill="none" />
-          <path className={`${s.leaf} ${s.leafR} ${s.leaf4}`}
-            d="M0,-67 C9,-75 17,-78 23,-64" stroke={c.leaf}
-            strokeWidth="3.5" strokeLinecap="round" fill="none" />
-          {/* ear of corn on some plants */}
+
+          {/* leaf blades — filled, tapered shapes that arch out and droop */}
+          <path className={`${s.leaf} ${s.leafL} ${s.leaf1}`} fill={c.leafA}
+            d="M0,-24 C-13,-33 -27,-38 -36,-34 C-42,-31 -46,-24 -48,-15 C-43,-23 -36,-28 -28,-29 C-18,-30 -8,-27 0,-21 Z" />
+          <path className={`${s.leaf} ${s.leafR} ${s.leaf2}`} fill={c.leafB}
+            d="M0,-38 C11,-46 23,-51 31,-48 C37,-45 41,-38 43,-30 C38,-37 31,-42 24,-43 C15,-44 7,-41 0,-35 Z" />
+          <path className={`${s.leaf} ${s.leafL} ${s.leaf3}`} fill={c.leafB}
+            d="M0,-52 C-9,-59 -19,-63 -26,-61 C-31,-59 -35,-53 -37,-46 C-32,-52 -26,-56 -20,-57 C-13,-58 -6,-55 0,-49 Z" />
+          <path className={`${s.leaf} ${s.leafR} ${s.leaf4}`} fill={c.leafA}
+            d="M0,-62 C8,-68 16,-71 22,-69 C26,-67 29,-62 30,-56 C26,-61 21,-64 16,-65 C10,-66 5,-64 0,-59 Z" />
+          <path className={`${s.leaf} ${s.leafL} ${s.leaf5}`} fill={c.leafB}
+            d="M0,-72 C-6,-77 -12,-80 -17,-79 C-20,-78 -23,-74 -24,-69 C-21,-73 -17,-75 -13,-76 C-8,-76 -4,-75 0,-70 Z" />
+
+          {/* ear — husked cob with silk, on some front-row plants */}
           {ear && (
             <g className={s.ear}>
-              <ellipse cx="9" cy="-48" rx="5.5" ry="11" fill="#e8c95a"
-                stroke="#6a8a3a" strokeWidth="2" transform="rotate(-14 9 -48)" />
+              <path d="M6,-38 C4.5,-44 4.5,-52 7,-57 C10,-59 14,-58 15.5,-53 C17,-47 16,-40 13,-36 C10.5,-34 7.5,-35 6,-38 Z"
+                fill="#cfae55" />
+              <path d="M6,-38 C5,-45 5.5,-52 8,-56 C8,-50 9,-43 12,-37 C10,-35 7.5,-35.5 6,-38 Z"
+                fill={c.leafA} />
+              <g stroke="#bd8d55" strokeWidth="1.2" strokeLinecap="round" fill="none">
+                <path d="M10,-57 C11,-61 13,-63 15,-64" />
+                <path d="M9,-57 C8.5,-61 8,-63 8,-66" />
+              </g>
             </g>
           )}
-          {/* tassel */}
-          <g className={s.tassel} stroke="#c9a94b" strokeWidth="3" strokeLinecap="round">
-            <path d="M0,-88 L0,-104" />
-            <path d="M0,-88 L-8,-100" />
-            <path d="M0,-88 L8,-100" />
+
+          {/* tassel — a fine straw-coloured spray */}
+          <g className={s.tassel} stroke="#b9a05e" strokeWidth="1.6" strokeLinecap="round" fill="none">
+            <path d="M0,-88 C0.5,-96 0,-102 0,-107" />
+            <path d="M0,-88 C-3,-95 -6,-99 -10,-102" />
+            <path d="M0,-88 C3,-95 6,-99 10,-102" />
+            <path d="M0,-88 C-1.5,-95 -3.5,-100 -5,-105" />
+            <path d="M0,-88 C1.5,-95 3.5,-100 5,-105" />
           </g>
         </g>
       </g>
@@ -103,34 +118,54 @@ const CornFieldBanner = () => (
       preserveAspectRatio="xMidYMax slice"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* sun — kept near center-left so slice-cropping at narrow widths won't cut it */}
-      <g className={s.sunGroup}>
-        <g className={s.rays} stroke="#f2c14e" strokeWidth="3" strokeLinecap="round" opacity="0.55">
-          <path d="M210,6 L210,14" /><path d="M210,70 L210,78" />
-          <path d="M174,42 L182,42" /><path d="M238,42 L246,42" />
-          <path d="M185,17 L190,22" /><path d="M230,62 L235,67" />
-          <path d="M235,17 L230,22" /><path d="M190,62 L185,67" />
-        </g>
-        <circle className={s.sun} cx="210" cy="42" r="21" fill="#f2c14e" opacity="0.9" />
+      <defs>
+        {/* soft evening sun — a glow, not a cartoon disc */}
+        <radialGradient id="cornSunGlow">
+          <stop offset="0%"  stopColor="#fbe7a8" stopOpacity="0.95" />
+          <stop offset="45%" stopColor="#f6d98a" stopOpacity="0.5" />
+          <stop offset="100%" stopColor="#f6d98a" stopOpacity="0" />
+        </radialGradient>
+        {/* low haze that sits behind the back row */}
+        <linearGradient id="cornHaze" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"  stopColor="#ffffff" stopOpacity="0" />
+          <stop offset="100%" stopColor="#fdf8ec" stopOpacity="0.5" />
+        </linearGradient>
+        <linearGradient id="cornSoil" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"  stopColor="#77603f" />
+          <stop offset="100%" stopColor="#57432a" />
+        </linearGradient>
+      </defs>
+
+      {/* sun */}
+      <circle className={s.sun} cx="210" cy="38" r="36" fill="url(#cornSunGlow)" />
+      <circle className={s.sun} cx="210" cy="38" r="11" fill="#f7dd94" opacity="0.85" />
+
+      {/* wispy clouds */}
+      <g className={s.cloud1} fill="#ffffff" opacity="0.3">
+        <ellipse cx="0" cy="32" rx="46" ry="9" />
+        <ellipse cx="32" cy="27" rx="30" ry="7" />
+      </g>
+      <g className={s.cloud2} fill="#ffffff" opacity="0.22">
+        <ellipse cx="0" cy="60" rx="38" ry="7" />
+        <ellipse cx="-26" cy="56" rx="22" ry="6" />
       </g>
 
-      {/* drifting clouds */}
-      <g className={s.cloud1} fill="#ffffff" opacity="0.55">
-        <ellipse cx="0" cy="34" rx="34" ry="12" />
-        <ellipse cx="26" cy="28" rx="24" ry="10" />
-      </g>
-      <g className={s.cloud2} fill="#ffffff" opacity="0.4">
-        <ellipse cx="0" cy="62" rx="28" ry="10" />
-        <ellipse cx="-22" cy="57" rx="18" ry="8" />
-      </g>
+      {/* horizon haze for depth */}
+      <rect x="0" y="112" width="1200" height="38" fill="url(#cornHaze)" />
 
       {/* the corn field — back row first so the front row overlaps it */}
       {BACK_ROW.map((p, i) => <CornPlant key={`b${i}`} {...p} />)}
       {FRONT_ROW.map((p, i) => <CornPlant key={`f${i}`} {...p} />)}
 
-      {/* soil */}
-      <rect x="0" y="148" width="1200" height="22" fill="#7a5c3a" />
-      <rect x="0" y="148" width="1200" height="3" fill="#5f4629" />
+      {/* soil — gently uneven line, darker at depth */}
+      <path
+        d="M0,150 C150,148.5 300,151 450,149 C650,147.5 850,151 1050,149 C1120,148.5 1170,150.5 1200,149.5 L1200,170 L0,170 Z"
+        fill="url(#cornSoil)"
+      />
+      <path
+        d="M0,150 C150,148.5 300,151 450,149 C650,147.5 850,151 1050,149 C1120,148.5 1170,150.5 1200,149.5"
+        fill="none" stroke="#46351f" strokeWidth="1.4" opacity="0.5"
+      />
     </svg>
 
     <div className={s.tagline}>

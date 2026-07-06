@@ -17,7 +17,7 @@
   margin-bottom: 2rem;
   border: 1px solid #ddd8cc;
   box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
-  background: linear-gradient(180deg, #dcebf5 0%, #eef2e2 62%, #f6f1e3 100%);
+  background: linear-gradient(180deg, #dfe7ee 0%, #ebecdc 60%, #f2edda 100%);
 }
 
 .field {
@@ -44,9 +44,10 @@
 .leafL { transform-origin: 100% 100%; }
 .leafR { transform-origin: 0% 100%; }
 .leaf1 { animation-delay: calc(var(--d, 0s) + 0.55s); }
-.leaf2 { animation-delay: calc(var(--d, 0s) + 0.8s); }
-.leaf3 { animation-delay: calc(var(--d, 0s) + 1.05s); }
-.leaf4 { animation-delay: calc(var(--d, 0s) + 1.3s); }
+.leaf2 { animation-delay: calc(var(--d, 0s) + 0.75s); }
+.leaf3 { animation-delay: calc(var(--d, 0s) + 0.95s); }
+.leaf4 { animation-delay: calc(var(--d, 0s) + 1.15s); }
+.leaf5 { animation-delay: calc(var(--d, 0s) + 1.35s); }
 @keyframes leafIn {
   from { transform: scale(0); }
 }
@@ -60,7 +61,7 @@
 .tassel {
   transform-box: fill-box;
   transform-origin: 50% 100%;
-  animation: popIn 0.7s cubic-bezier(0.34, 1.5, 0.64, 1) calc(var(--d, 0s) + 1.5s) both;
+  animation: popIn 0.7s cubic-bezier(0.34, 1.5, 0.64, 1) calc(var(--d, 0s) + 1.6s) both;
 }
 @keyframes popIn {
   from { opacity: 0; transform: scale(0.3); }
@@ -77,23 +78,15 @@
   to   { transform: rotate(1.6deg); }
 }
 
-/* ── Sky: sun pulse, ray shimmer, drifting clouds ── */
+/* ── Sky: soft sun glow, drifting clouds ── */
 .sun {
   transform-box: fill-box;
   transform-origin: 50% 50%;
-  animation: sunPulse 6s ease-in-out infinite alternate;
-}
-.rays {
-  transform-box: fill-box;
-  transform-origin: 50% 50%;
-  animation: raySpin 90s linear infinite;
+  animation: sunPulse 7s ease-in-out infinite alternate;
 }
 @keyframes sunPulse {
   from { transform: scale(1); }
-  to   { transform: scale(1.07); }
-}
-@keyframes raySpin {
-  to { transform: rotate(360deg); }
+  to   { transform: scale(1.06); }
 }
 
 .cloud1 { animation: drift 85s linear infinite; }
@@ -127,7 +120,7 @@
 /* ── Accessibility: no motion → show the grown field, skip the show ── */
 @media (prefers-reduced-motion: reduce) {
   .grow, .leaf, .ear, .tassel, .sway,
-  .sun, .rays, .cloud1, .cloud2, .tagline {
+  .sun, .cloud1, .cloud2, .tagline {
     animation: none;
   }
 }
