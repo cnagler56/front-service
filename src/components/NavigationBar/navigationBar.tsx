@@ -263,6 +263,9 @@ export const NavigationBar = () => {
             <Link href="/usda-reports">USDA Reports</Link>
           </li>
           <li>
+            <Link href="/report-summary">Report Summary</Link>
+          </li>
+          <li>
             <Link href="/cattle">Cattle</Link>
           </li>
           <li>
