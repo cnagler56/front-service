@@ -537,6 +537,50 @@ export interface OpenRound {
   scheduled: boolean;       // false when no upcoming date is set
 }
 
+/** One national metric with its month-over-month and year-over-year change. */
+export interface CropSummaryMetric {
+  latest: number | null;
+  previous: number | null;
+  priorYear: number | null;
+  momChange: number | null;  // latest − previous report
+  yoyChange: number | null;  // latest − last year
+}
+
+/** One state's yield move between reports. */
+export interface CropSummaryMover {
+  state: string;
+  latest: number;
+  previous: number;
+  change: number;
+}
+
+/** AI-generated plain-English recap of a Crop Production report. */
+export interface CropCommentary {
+  commentary: string;
+  model: string | null;
+  generatedAt: string | null;
+  available: boolean;
+}
+
+/** Crop Production report summary for the /report-summary tab. */
+export interface CropSummary {
+  commodity: string;
+  year: number;
+  latestPeriod?: string;
+  previousPeriod?: string | null;
+  priorYear?: number;
+  stateCount?: number;
+  moverBasis?: string;
+  national?: {
+    yield: CropSummaryMetric;
+    production: CropSummaryMetric;
+    acres: CropSummaryMetric;
+  };
+  topGainers?: CropSummaryMover[];
+  topDecliners?: CropSummaryMover[];
+  message?: string;
+}
+
 /**
  * Default fetch options for every API call — `credentials: 'include'` is
  * what makes the browser send the session cookie cross-origin (Next.js on
@@ -734,6 +778,12 @@ export const api = {
   getReportDates: () => get<ReportReleaseDate[]>('/api/admin/report-dates'),
   // Public: which Crop Production report the challenge is currently guessing.
   getOpenRound: () => get<OpenRound>('/api/report-dates/open-round'),
+  // Crop Production report summary (national rollups + top state movers).
+  getCropSummary: (commodity: string, year?: number) =>
+    get<CropSummary>(`/api/crop-summary/${commodity}${year ? `?year=${year}` : ''}`),
+  // AI-generated recap of the Crop Production report (grounded in the summary figures).
+  getCropCommentary: (commodity: string, year?: number) =>
+    get<CropCommentary>(`/api/crop-summary/${commodity}/commentary${year ? `?year=${year}` : ''}`),
   saveReportDates: async (reportKey: string, dates: string[]): Promise<ReportReleaseDate[]> => {
     const res = await fetch(`${BASE}/api/admin/report-dates`, {
       method: 'POST', credentials: 'include',
