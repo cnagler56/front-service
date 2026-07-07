@@ -778,6 +778,21 @@ export const api = {
   getReportDates: () => get<ReportReleaseDate[]>('/api/admin/report-dates'),
   // Public: which Crop Production report the challenge is currently guessing.
   getOpenRound: () => get<OpenRound>('/api/report-dates/open-round'),
+  // Home-page banner animation (admin-selectable: corn | wheat | rain | none).
+  getHomeBanner: () => get<{ banner: string }>('/api/site/banner'),
+  setHomeBanner: async (banner: string): Promise<{ banner: string }> => {
+    const res = await fetch(`${BASE}/api/admin/site/banner`, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ banner }),
+    });
+    if (!res.ok) {
+      let msg = `Save failed (${res.status})`;
+      try { const j = await res.json(); msg = j.message || j.error || msg; } catch { /* ignore */ }
+      throw new Error(msg);
+    }
+    return res.json();
+  },
   // Crop Production report summary (national rollups + top state movers).
   getCropSummary: (commodity: string, year?: number) =>
     get<CropSummary>(`/api/crop-summary/${commodity}${year ? `?year=${year}` : ''}`),

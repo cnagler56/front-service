@@ -1,0 +1,291 @@
+/* ── Combine-crash banner: timeline ─────────────────────────────────
+   0.0s  corn grows in (--d staggers)
+   1.0s  green combine enters left → arrives centre 4.6s (corn cut en route)
+   4.8s  red combine dashes in from the right (corn flattened en route)
+   5.5s  CRASH — jolts, sparks, small debris, small screen shake
+   5.6s  fire ignites and grows at the crash point
+   7.5s  EXPLOSION — flash, fireball, shockwave, debris, big shake,
+         combines vanish → wreckage appears, nearby corn levelled
+   8s+   aftermath loops: flames flicker, smoke rises, caption fades in
+
+   Every "disaster" element has base opacity 0 and is revealed only by its
+   animation — so prefers-reduced-motion shows a calm, static corn field. */
+
+.banner {
+  position: relative;
+  width: 100%;
+  height: clamp(120px, 18vw, 170px);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 2rem;
+  border: 1px solid #ddd8cc;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+  background: linear-gradient(180deg, #dfe7ee 0%, #ebecdc 60%, #f2edda 100%);
+}
+
+.field {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ── Corn ── */
+.grow {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: cornGrow 0.6s cubic-bezier(0.25, 0.8, 0.35, 1) var(--d, 0s) both;
+}
+@keyframes cornGrow {
+  from { transform: scaleY(0); }
+}
+
+/* cut to stubble by the green header (--ct = when it arrives) */
+.cut {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: cutDown 0.22s ease-in var(--ct, 0s) forwards;
+}
+@keyframes cutDown {
+  to { transform: scaleY(0.14); }
+}
+
+/* flattened by the red combine at speed */
+.mow {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: mowDown 0.18s ease-in var(--ct, 0s) forwards;
+}
+@keyframes mowDown {
+  to { transform: rotate(-75deg) scaleY(0.75); opacity: 0.65; }
+}
+
+/* levelled by the blast */
+.blast {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: blastGone 0.18s ease-in 7.5s forwards;
+}
+@keyframes blastGone {
+  to { transform: scaleY(0); opacity: 0; }
+}
+
+/* ── Combines ── */
+.drive1 {
+  opacity: 0; /* hidden when animations are off */
+  animation: drive1 3.6s cubic-bezier(0.3, 0.5, 0.4, 1) 1s both;
+}
+@keyframes drive1 {
+  from { transform: translateX(-760px); opacity: 1; }
+  to   { transform: none; opacity: 1; }
+}
+
+.drive2 {
+  opacity: 0;
+  animation: drive2 0.7s cubic-bezier(0.45, 0, 0.9, 0.7) 4.8s both;
+}
+@keyframes drive2 {
+  from { transform: translateX(740px) rotate(-2deg); opacity: 1; }
+  to   { transform: none; opacity: 1; }
+}
+
+/* impact jolts */
+.jolt1 {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: joltBack 0.35s ease-out 5.5s both;
+}
+@keyframes joltBack {
+  35%  { transform: translateX(-13px) rotate(-2.5deg); }
+  100% { transform: translateX(-8px); }
+}
+
+.jolt2 {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: rearUp 0.4s ease-out 5.5s both;
+}
+@keyframes rearUp {
+  30%  { transform: rotate(-12deg) translateX(6px); }
+  100% { transform: rotate(-5deg) translateX(4px); }
+}
+
+/* both combines cease to exist at the boom */
+.vanish {
+  animation: gone 0.12s linear 7.52s forwards;
+}
+@keyframes gone {
+  to { opacity: 0; }
+}
+
+/* wheels spin while driving (bounded so they stop when parked) */
+.wheelR, .wheelF {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+}
+.drive1 .wheelR { animation: spin 0.55s linear 1s 7; }
+.drive1 .wheelF { animation: spin 0.4s  linear 1s 9; }
+.drive2 .wheelR { animation: spin 0.25s linear 4.8s 3; }
+.drive2 .wheelF { animation: spin 0.18s linear 4.8s 4; }
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Crash effects ── */
+.sparks {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: sparkFlash 0.5s ease-out 5.5s both;
+}
+@keyframes sparkFlash {
+  0%   { opacity: 0; transform: scale(0.3); }
+  25%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.35); }
+}
+
+.deb { opacity: 0; }
+.crashDeb { animation: debFly 0.8s cubic-bezier(0.2, 0.6, 0.6, 1) 5.5s both; }
+.boomDeb  { animation: debFly 1.1s cubic-bezier(0.2, 0.6, 0.6, 1) 7.5s both; }
+@keyframes debFly {
+  0%   { opacity: 1; transform: none; }
+  45%  { opacity: 1; transform: translate(calc(var(--dx, 0px) * 0.65), var(--dy, -50px)) rotate(220deg); }
+  100% { opacity: 0; transform: translate(var(--dx, 0px), 26px) rotate(430deg); }
+}
+
+/* ── Fire (ignites after the crash, keeps burning on the wreck) ── */
+.fireGrow {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: fireGrow 1.9s ease-out 5.6s forwards;
+}
+@keyframes fireGrow {
+  0%   { opacity: 0; transform: scale(0.05); }
+  18%  { opacity: 1; }
+  100% { opacity: 1; transform: scale(1); }
+}
+.flame1, .flame2, .flame3, .flame4 {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+.flame1 { animation: flicker 0.24s ease-in-out infinite alternate; }
+.flame2 { animation: flicker 0.19s ease-in-out 0.07s infinite alternate; }
+.flame3 { animation: flicker 0.28s ease-in-out 0.11s infinite alternate; }
+.flame4 { animation: flicker 0.22s ease-in-out 0.05s infinite alternate; }
+@keyframes flicker {
+  from { transform: scaleY(0.86) scaleX(1.06); }
+  to   { transform: scaleY(1.14) scaleX(0.94); }
+}
+
+/* ── Explosion ── */
+.flash {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: boomFlash 0.5s ease-out 7.5s both;
+}
+@keyframes boomFlash {
+  0%   { opacity: 0; transform: scale(0.2); }
+  20%  { opacity: 0.95; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.6); }
+}
+
+.fireball {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: boomFire 1s ease-out 7.5s both;
+}
+@keyframes boomFire {
+  0%   { opacity: 0; transform: scale(0.1); }
+  25%  { opacity: 1; transform: scale(1.1); }
+  100% { opacity: 0; transform: scale(2.1); }
+}
+
+.shockwave {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: boomRing 0.9s ease-out 7.55s both;
+}
+@keyframes boomRing {
+  0%   { opacity: 0.9; transform: scale(0.2); }
+  100% { opacity: 0; transform: scale(3.4); }
+}
+
+/* ── Aftermath ── */
+.wreck {
+  opacity: 0;
+  animation: wreckIn 0.2s ease-out 7.55s forwards;
+}
+@keyframes wreckIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.smoke { opacity: 0; }
+.smokeA { animation: smokeUpA 3s   ease-out 7.7s infinite; }
+.smokeB { animation: smokeUpB 3.6s ease-out 8.4s infinite; }
+.smokeC { animation: smokeUpC 3.2s ease-out 9.2s infinite; }
+@keyframes smokeUpA {
+  0%   { opacity: 0.5;  transform: translate(0, 12px) scale(0.5); }
+  100% { opacity: 0; transform: translate(-16px, -58px) scale(1.7); }
+}
+@keyframes smokeUpB {
+  0%   { opacity: 0.4;  transform: translate(6px, 14px) scale(0.45); }
+  100% { opacity: 0; transform: translate(14px, -64px) scale(1.9); }
+}
+@keyframes smokeUpC {
+  0%   { opacity: 0.45; transform: translate(-4px, 10px) scale(0.5); }
+  100% { opacity: 0; transform: translate(-2px, -52px) scale(1.6); }
+}
+
+/* the safety punchline lands after the dust settles */
+.caption {
+  opacity: 0;
+  animation: capIn 1.2s ease 8.8s forwards;
+}
+@keyframes capIn {
+  to { opacity: 1; }
+}
+
+/* ── Screen shake: a rattle at the crash, a slam at the boom ── */
+.shake {
+  animation: shakeSeq 2.9s linear 5.5s both;
+}
+@keyframes shakeSeq {
+  0%   { transform: none; }
+  2%   { transform: translate(-2px, 1px); }
+  5%   { transform: translate(2px, -1px); }
+  8%   { transform: translate(-1px, 1px); }
+  11%  { transform: translate(1px, 0); }
+  13%  { transform: none; }
+  68%  { transform: none; }
+  70%  { transform: translate(-4px, 3px); }
+  73%  { transform: translate(4px, -3px); }
+  76%  { transform: translate(-3px, 2px); }
+  79%  { transform: translate(3px, -2px); }
+  82%  { transform: translate(-2px, 1px); }
+  85%  { transform: translate(1px, -1px); }
+  88%  { transform: none; }
+  100% { transform: none; }
+}
+
+.cloud { animation: drift 100s linear infinite; }
+@keyframes drift {
+  from { transform: translateX(-90px); }
+  to   { transform: translateX(1300px); }
+}
+
+/* ── Accessibility: no motion → calm field, no crash at all ── */
+@media (prefers-reduced-motion: reduce) {
+  .grow, .cut, .mow, .blast,
+  .drive1, .drive2, .jolt1, .jolt2, .vanish,
+  .wheelR, .wheelF, .sparks, .deb, .crashDeb, .boomDeb,
+  .fireGrow, .flame1, .flame2, .flame3, .flame4,
+  .flash, .fireball, .shockwave, .wreck,
+  .smoke, .smokeA, .smokeB, .smokeC,
+  .caption, .shake, .cloud {
+    animation: none;
+  }
+}
