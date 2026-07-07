@@ -190,12 +190,18 @@ const CombineCrashBanner = () => (
         </g>
       </g>
 
-      {/* red combine — dashes in from the right (mirrored to face left) */}
-      <g transform="translate(666,150) scale(-1,1)">
+      {/* red combine — dashes in from the right, head-on. The mirror that
+          makes it face left sits INSIDE the drive/jolt wrappers: those
+          animate in screen coordinates, only the artwork is flipped.
+          (A mirror outside would flip the drive too — it would back in
+          from the left.) */}
+      <g transform="translate(666,150)">
         <g className={s.vanish}>
           <g className={s.drive2}>
             <g className={s.jolt2}>
-              <Combine body="#b03a2e" accent="#f2c14e" />
+              <g transform="scale(-1,1)">
+                <Combine body="#b03a2e" accent="#f2c14e" />
+              </g>
             </g>
           </g>
         </g>
