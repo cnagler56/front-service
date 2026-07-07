@@ -3,6 +3,7 @@ import React, { useLayoutEffect, useRef, useState } from "react";
 import styles from "./Home.module.css";
 import Announcement from "./Announcement";
 import CommodityPrices from "./CommodityPrices";
+import HomeBanner from "./HomeBanner";
 import LatestNews from "./LatestNews";
 import UsdaReportCalendar from "./UsdaReportCalendar";
 import WeatherConditions from "./WeatherConditions";
@@ -24,6 +25,7 @@ const Home = () => {
 
   return (
     <main className={styles.farmPageBody}>
+      <HomeBanner />
       <Announcement />
       <CommodityPrices />
       <div className={styles.sideBySide}>

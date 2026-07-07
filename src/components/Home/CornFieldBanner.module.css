@@ -1,0 +1,126 @@
+/* ── Animated corn-field banner ─────────────────────────────────────
+   Choreography (per plant, offset by --d so the field comes in staggered):
+     1. .grow   — the plant rises out of the soil        (0s   → 1.4s)
+     2. .leaf   — leaves unfurl outward, low to high     (+0.5s → +1.3s)
+     3. .ear    — the ear fills in                       (+1.3s)
+     4. .tassel — the tassel pops at the top             (+1.5s)
+     5. .sway   — gentle breeze, forever                 (+2.2s)
+   Default styles are the fully-grown field; animations only supply the
+   "from" state — so prefers-reduced-motion just disables them cleanly. */
+
+.banner {
+  position: relative;
+  width: 100%;
+  height: clamp(120px, 18vw, 170px);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 2rem;
+  border: 1px solid #ddd8cc;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+  background: linear-gradient(180deg, #dfe7ee 0%, #ebecdc 60%, #f2edda 100%);
+}
+
+.field {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ── Growth ── */
+.grow {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: cornGrow 1.4s cubic-bezier(0.25, 0.8, 0.35, 1) var(--d, 0s) both;
+}
+@keyframes cornGrow {
+  from { transform: scaleY(0); }
+}
+
+/* ── Leaves unfurl from their attachment point on the stalk ── */
+.leaf {
+  transform-box: fill-box;
+  animation: leafIn 0.9s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+.leafL { transform-origin: 100% 100%; }
+.leafR { transform-origin: 0% 100%; }
+.leaf1 { animation-delay: calc(var(--d, 0s) + 0.55s); }
+.leaf2 { animation-delay: calc(var(--d, 0s) + 0.75s); }
+.leaf3 { animation-delay: calc(var(--d, 0s) + 0.95s); }
+.leaf4 { animation-delay: calc(var(--d, 0s) + 1.15s); }
+.leaf5 { animation-delay: calc(var(--d, 0s) + 1.35s); }
+@keyframes leafIn {
+  from { transform: scale(0); }
+}
+
+/* ── Ear + tassel pop in once the plant is up ── */
+.ear {
+  transform-box: fill-box;
+  transform-origin: 0% 50%;
+  animation: popIn 0.7s cubic-bezier(0.34, 1.5, 0.64, 1) calc(var(--d, 0s) + 1.3s) both;
+}
+.tassel {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: popIn 0.7s cubic-bezier(0.34, 1.5, 0.64, 1) calc(var(--d, 0s) + 1.6s) both;
+}
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.3); }
+}
+
+/* ── Breeze — the whole plant sways around its base ── */
+.sway {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: breeze 4.5s ease-in-out calc(var(--d, 0s) + 2.2s) infinite alternate;
+}
+@keyframes breeze {
+  from { transform: rotate(-1.4deg); }
+  to   { transform: rotate(1.6deg); }
+}
+
+/* ── Sky: soft sun glow, drifting clouds ── */
+.sun {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: sunPulse 7s ease-in-out infinite alternate;
+}
+@keyframes sunPulse {
+  from { transform: scale(1); }
+  to   { transform: scale(1.06); }
+}
+
+.cloud1 { animation: drift 85s linear infinite; }
+.cloud2 { animation: drift 115s linear -45s infinite; }
+@keyframes drift {
+  from { transform: translateX(-80px); }
+  to   { transform: translateX(1300px); }
+}
+
+/* ── Tagline fades in once the field is up ── */
+.tagline {
+  position: absolute;
+  right: 1.25rem;
+  bottom: 1.6rem;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(0.85rem, 1.6vw, 1.1rem);
+  color: #2c4a1e;
+  background: rgba(253, 250, 244, 0.78);
+  border: 1px solid rgba(201, 223, 163, 0.8);
+  border-radius: 999px;
+  padding: 0.35rem 1rem;
+  animation: taglineIn 1.2s ease 2.6s both;
+}
+@keyframes taglineIn {
+  from { opacity: 0; transform: translateY(8px); }
+}
+@media (max-width: 640px) {
+  .tagline { display: none; }
+}
+
+/* ── Accessibility: no motion → show the grown field, skip the show ── */
+@media (prefers-reduced-motion: reduce) {
+  .grow, .leaf, .ear, .tassel, .sway,
+  .sun, .cloud1, .cloud2, .tagline {
+    animation: none;
+  }
+}

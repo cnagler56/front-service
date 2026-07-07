@@ -293,6 +293,9 @@ export const NavigationBar = () => {
                   <Link href="/admin/announcement">Announcement</Link>
                 </li>
                 <li>
+                  <Link href="/admin/banner">Home Banner</Link>
+                </li>
+                <li>
                   <Link href="/admin/wasde">WASDE Upload</Link>
                 </li>
                 <li>
