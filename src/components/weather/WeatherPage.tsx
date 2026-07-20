@@ -5,7 +5,6 @@ import DroughtAndSoil from '@/src/components/DroughtAndSoil';
 import { useUser } from '@/src/lib/UserContext';
 import styles from '@/src/styles/farm.module.css';
 import CpcOutlookPanel from './CpcOutlookPanel';
-import VegetationHealthPanel from './VegetationHealthPanel';
 import WeatherToolbar from './WeatherToolbar';
 import { useNwsForecast } from './useNwsForecast';
 
@@ -63,11 +62,9 @@ export default function WeatherPage() {
         </div>
       </div>
 
-      {/* NOAA CPC 6–10 day temperature & precipitation probability outlooks */}
+      {/* NOAA CPC 6–10 day temperature & precipitation probability outlooks.
+          Vegetation health lives on its own page now: Weather → Vegetation Health. */}
       <CpcOutlookPanel />
-
-      {/* NOAA STAR weekly vegetation health (VHI / VCI / TCI) satellite maps */}
-      <VegetationHealthPanel />
     </div>
   );
 }
