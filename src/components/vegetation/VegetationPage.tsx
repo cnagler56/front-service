@@ -125,8 +125,8 @@ export default function VegetationPage() {
         </div>
         <div className={styles.sectionBody}>
           <p style={{ fontFamily: 'Lato, sans-serif', fontSize: '.84rem', color: '#6a7a55', lineHeight: 1.55, margin: '0 0 1rem' }}>
-            Each county is shaded by its average <strong>Vegetation Health Index</strong> from NOAA&rsquo;s
-            weekly 4km satellite composite — our own county-level rollup, using{' '}
+            Each county is shaded by its <strong>average Vegetation Health Index</strong> across
+            every ~4km satellite cell inside it, on{' '}
             <strong>the same color scale as NOAA&rsquo;s official maps</strong> below:{' '}
             <span style={{ color: '#d0006f', fontWeight: 700 }}>magenta/red</span> = stress,{' '}
             <span style={{ color: '#b08a00', fontWeight: 700 }}>yellow</span> = fair,{' '}
@@ -219,6 +219,21 @@ export default function VegetationPage() {
               </div>
             </div>
           )}
+
+          {/* Why this map looks smoother than NOAA's national one */}
+          <div style={{
+            marginTop: '1rem', padding: '.7rem .95rem', borderRadius: 6,
+            background: '#f5f8ee', border: '1px solid #e1dccc', borderLeft: '4px solid #8fbc45',
+            fontFamily: 'Lato, sans-serif', fontSize: '.8rem', color: '#3d6b2a', lineHeight: 1.55,
+          }}>
+            <strong>Why this looks smoother than NOAA&rsquo;s national map:</strong> NOAA colors every
+            individual 4km pixel, while each county here is one number — the average of the
+            100+ pixels inside it. Averaging softens the extremes, so a county with pockets of
+            deep-blue lushness or a small stressed area will paint closer to the middle of the
+            scale (this is most visible in lake-and-forest country like northern Minnesota).
+            Use this map to compare counties at a glance; use NOAA&rsquo;s maps below to spot
+            hotspots inside a county.
+          </div>
 
           <p style={{ margin: '.8rem 0 0', fontSize: '.7rem', color: '#999', fontFamily: 'Lato, sans-serif' }}>
             Data: NOAA STAR Vegetation Health (4km blended VHP), averaged per county by Just4Ag ·
