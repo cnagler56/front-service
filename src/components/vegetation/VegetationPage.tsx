@@ -54,34 +54,26 @@ const MIDWEST_STATES = new Set([
   'Missouri', 'Kansas', 'Nebraska', 'South Dakota', 'North Dakota', 'Kentucky', 'Tennessee',
 ]);
 
-/* ── VHI color scale — the red→yellow→green convention farmers know ── */
-const STOPS: { v: number; c: [number, number, number] }[] = [
-  { v: 0,   c: [165, 0, 38] },
-  { v: 20,  c: [222, 90, 44] },
-  { v: 35,  c: [253, 174, 97] },
-  { v: 50,  c: [254, 240, 176] },
-  { v: 65,  c: [166, 217, 106] },
-  { v: 100, c: [26, 152, 80] },
+/* ── VHI color scale — NOAA's exact classes, extracted from their own
+   colorbar image (bar_VHI.png), so our county map reads identically to the
+   official national maps shown below it. Boundaries 0/6/12/24/36/48/60/72/84. ── */
+const CLASSES: { max: number; color: string; word: string }[] = [
+  { max: 6,   color: '#FF00A0', word: 'extreme stress' },
+  { max: 12,  color: '#F00050', word: 'severe stress' },
+  { max: 24,  color: '#FF7878', word: 'stressed' },
+  { max: 36,  color: '#FFAA00', word: 'mild stress' },
+  { max: 48,  color: '#FFFF55', word: 'fair' },
+  { max: 60,  color: '#55FF55', word: 'favorable' },
+  { max: 72,  color: '#00AA00', word: 'good' },
+  { max: 84,  color: '#5555FF', word: 'very good' },
+  { max: 100, color: '#0000AA', word: 'exceptional' },
 ];
-function vhiColor(v: number): string {
+function vhiClass(v: number) {
   const clamp = Math.max(0, Math.min(100, v));
-  for (let i = 1; i < STOPS.length; i++) {
-    if (clamp <= STOPS[i].v) {
-      const a = STOPS[i - 1], b = STOPS[i];
-      const t = (clamp - a.v) / (b.v - a.v);
-      const mix = a.c.map((x, k) => Math.round(x + (b.c[k] - x) * t));
-      return `rgb(${mix[0]},${mix[1]},${mix[2]})`;
-    }
-  }
-  return 'rgb(26,152,80)';
+  return CLASSES.find(c => clamp <= c.max) ?? CLASSES[CLASSES.length - 1];
 }
-function vhiWord(v: number): string {
-  if (v < 16) return 'severe stress';
-  if (v < 36) return 'stressed';
-  if (v < 51) return 'fair';
-  if (v < 66) return 'favorable';
-  return 'very favorable';
-}
+function vhiColor(v: number): string { return vhiClass(v).color; }
+function vhiWord(v: number): string { return vhiClass(v).word; }
 
 export default function VegetationPage() {
   const [counties, setCounties] = useState<CountyFeature[]>([]);
@@ -134,9 +126,12 @@ export default function VegetationPage() {
         <div className={styles.sectionBody}>
           <p style={{ fontFamily: 'Lato, sans-serif', fontSize: '.84rem', color: '#6a7a55', lineHeight: 1.55, margin: '0 0 1rem' }}>
             Each county is shaded by its average <strong>Vegetation Health Index</strong> from NOAA&rsquo;s
-            weekly 4km satellite composite — our own county-level rollup of the same data behind
-            NOAA&rsquo;s national maps. <span style={{ color: '#b42318', fontWeight: 700 }}>Red</span> = crop
-            stress, <span style={{ color: '#1a7f37', fontWeight: 700 }}>green</span> = healthy vegetation.
+            weekly 4km satellite composite — our own county-level rollup, using{' '}
+            <strong>the same color scale as NOAA&rsquo;s official maps</strong> below:{' '}
+            <span style={{ color: '#d0006f', fontWeight: 700 }}>magenta/red</span> = stress,{' '}
+            <span style={{ color: '#b08a00', fontWeight: 700 }}>yellow</span> = fair,{' '}
+            <span style={{ color: '#00871f', fontWeight: 700 }}>green</span> = favorable,{' '}
+            <span style={{ color: '#2222cc', fontWeight: 700 }}>blue</span> = exceptionally lush.
             Hover any county for its value.
           </p>
 
@@ -196,15 +191,31 @@ export default function VegetationPage() {
             </div>
           )}
 
-          {/* Legend */}
+          {/* Legend — NOAA's discrete classes, proportional widths */}
           {hasData && (
-            <div style={{ maxWidth: 460, marginTop: '.9rem', fontFamily: 'Lato, sans-serif' }}>
-              <div style={{
-                height: 12, borderRadius: 6, border: '1px solid #d8d3c4',
-                background: `linear-gradient(90deg, ${[0, 20, 35, 50, 65, 100].map(v => vhiColor(v)).join(', ')})`,
-              }} />
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.68rem', color: '#7a8a65', marginTop: '.25rem' }}>
-                <span>0 · severe stress</span><span>50 · fair</span><span>100 · very healthy</span>
+            <div style={{ maxWidth: 560, marginTop: '.9rem', fontFamily: 'Lato, sans-serif' }}>
+              <div style={{ display: 'flex', height: 14, borderRadius: 4, overflow: 'hidden', border: '1px solid #b9b3a4' }}>
+                {CLASSES.map((c, i) => {
+                  const lo = i === 0 ? 0 : CLASSES[i - 1].max;
+                  return (
+                    <div key={c.max} title={`${lo}–${c.max}: ${c.word}`}
+                      style={{ width: `${c.max - lo}%`, background: c.color }} />
+                  );
+                })}
+              </div>
+              <div style={{ position: 'relative', height: 14, fontSize: '.66rem', color: '#7a8a65' }}>
+                {[0, 6, 12, 24, 36, 48, 60, 72, 84, 100].map(v => (
+                  <span key={v} style={{
+                    position: 'absolute', left: `${v}%`, transform: 'translateX(-50%)',
+                  }}>
+                    {v}
+                  </span>
+                ))}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.68rem', color: '#7a8a65' }}>
+                <span>← stressed</span>
+                <span>fair</span>
+                <span>lush →</span>
               </div>
             </div>
           )}
