@@ -4,7 +4,6 @@ import DailyForecast from '@/src/components/DailyForecast';
 import DroughtAndSoil from '@/src/components/DroughtAndSoil';
 import { useUser } from '@/src/lib/UserContext';
 import styles from '@/src/styles/farm.module.css';
-import CpcOutlookPanel from './CpcOutlookPanel';
 import WeatherToolbar from './WeatherToolbar';
 import { useNwsForecast } from './useNwsForecast';
 
@@ -62,9 +61,8 @@ export default function WeatherPage() {
         </div>
       </div>
 
-      {/* NOAA CPC 6–10 day temperature & precipitation probability outlooks.
-          Vegetation health lives on its own page now: Weather → Vegetation Health. */}
-      <CpcOutlookPanel />
+      {/* CPC outlooks live on Weather → Extended Outlook; vegetation health on
+          Weather → Vegetation Health. Local Weather stays local: forecast + soil. */}
     </div>
   );
 }
