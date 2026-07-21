@@ -1,6 +1,7 @@
 'use client';
 
 import CpcOutlookPanel from './CpcOutlookPanel';
+import OutlookTrendStrip from './OutlookTrendStrip';
 import styles from '@/src/styles/farm.module.css';
 
 /**
@@ -20,6 +21,7 @@ export default function OutlookPage() {
         roughly next week; the 8–14 day maps reach into the week after.
       </p>
 
+      <OutlookTrendStrip />
       <CpcOutlookPanel range="6–10" prefix="610" />
       <CpcOutlookPanel range="8–14" prefix="814" />
     </div>
