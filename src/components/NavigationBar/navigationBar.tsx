@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { api } from "@/src/lib/api";
 import { useUser } from "@/src/lib/UserContext";
 
 export const NavigationBar = () => {
@@ -10,6 +12,15 @@ export const NavigationBar = () => {
   const { user } = useUser();
   const isLoggedIn = !!user;
   const isAdmin = user?.roles === 'ADMIN';
+
+  // Analysis-tab visibility comes from a server check (read entitlement isn't
+  // in the /me payload — it depends on the provider's subscriber list).
+  const [access, setAccess] = useState<{ canRead: boolean; canPublish: boolean }>({ canRead: false, canPublish: false });
+  useEffect(() => {
+    api.getAnalysisAccess()
+      .then(setAccess)
+      .catch(() => setAccess({ canRead: false, canPublish: false }));
+  }, [user]);
 
   return (
     <>
@@ -286,6 +297,16 @@ export const NavigationBar = () => {
           <li>
             <Link href="/calculators">Calculators</Link>
           </li>
+          {access.canRead && (
+            <li>
+              <Link href="/analysis">Analysis</Link>
+            </li>
+          )}
+          {access.canPublish && (
+            <li>
+              <Link href="/analyst" className="auth-link">Analyst Desk</Link>
+            </li>
+          )}
           <li>
             <Link href="/contact">Contact Us</Link>
           </li>
@@ -300,6 +321,9 @@ export const NavigationBar = () => {
                 </li>
                 <li>
                   <Link href="/admin/banner">Home Banner</Link>
+                </li>
+                <li>
+                  <Link href="/admin/analysts">Analysts</Link>
                 </li>
                 <li>
                   <Link href="/admin/wasde">WASDE Upload</Link>
