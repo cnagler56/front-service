@@ -60,6 +60,9 @@ export default function WeatherPage() {
           />
         </div>
       </div>
+
+      {/* CPC outlooks live on Weather → Extended Outlook; vegetation health on
+          Weather → Vegetation Health. Local Weather stays local: forecast + soil. */}
     </div>
   );
 }

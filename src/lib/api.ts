@@ -530,6 +530,39 @@ export interface ReportReleaseDate {
   releaseDate: string;  // ISO date "2026-07-10"
 }
 
+/** County VHI snapshot: 5-digit FIPS → mean Vegetation Health Index (0–100). */
+export interface VegetationCounties {
+  year?: number;
+  week?: number;
+  weekEnding?: string;      // ISO date the composite week ends
+  counties?: number;
+  updatedAt?: string | null;
+  byFips: Record<string, number>;
+  message?: string;
+}
+
+/** One issuance's reading in a trend series. */
+export interface OutlookPoint {
+  issued: string;
+  category: string;        // ABOVE | BELOW | NORMAL | EC
+  prob: number | null;
+  signed: number;          // +above / −below probability
+}
+/** Trend for one range/element/location. */
+export interface OutlookTrend {
+  latest: { category: string; prob: number; issued: string };
+  validStart?: string | null;
+  validEnd?: string | null;
+  series: OutlookPoint[];
+  count: number;
+  direction: string;       // warmer | cooler | wetter | drier | steady | new
+}
+/** ranges["610"|"814"] → { TEMP|PRECIP → { location → OutlookTrend } }. */
+export interface OutlookTrends {
+  ranges: Record<string, Record<string, Record<string, OutlookTrend>>>;
+  message?: string;
+}
+
 /** The open Crop Production guessing round for the challenge banner. */
 export interface OpenRound {
   label: string | null;     // month name of the next report, e.g. "August"
@@ -778,6 +811,10 @@ export const api = {
   getReportDates: () => get<ReportReleaseDate[]>('/api/admin/report-dates'),
   // Public: which Crop Production report the challenge is currently guessing.
   getOpenRound: () => get<OpenRound>('/api/report-dates/open-round'),
+  // County-level Vegetation Health Index (our aggregation of NOAA's weekly 4km data).
+  getVegetationCounties: () => get<VegetationCounties>('/api/vegetation/counties'),
+  // Warmer/cooler, wetter/drier trend across the last few CPC extended outlooks.
+  getOutlookTrends: () => get<OutlookTrends>('/api/outlook/trends'),
   // Home-page banner animation (admin-selectable: corn | wheat | rain | none).
   getHomeBanner: () => get<{ banner: string }>('/api/site/banner'),
   setHomeBanner: async (banner: string): Promise<{ banner: string }> => {

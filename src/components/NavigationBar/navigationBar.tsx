@@ -194,6 +194,12 @@ export const NavigationBar = () => {
               <li>
                 <Link href="/forecast-map">Forecast Map</Link>
               </li>
+              <li>
+                <Link href="/outlook">Extended Outlook</Link>
+              </li>
+              <li>
+                <Link href="/vegetation">Vegetation Health</Link>
+              </li>
             </ul>
           </li>
           <li>
