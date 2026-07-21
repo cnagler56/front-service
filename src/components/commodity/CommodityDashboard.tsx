@@ -10,7 +10,7 @@ import {
 } from "@/src/lib/api";
 import { useUser } from "@/src/lib/UserContext";
 import SupplyDemandBox from "./SupplyDemandBox";
-import PriceChartPanel from "./PriceChartPanel";
+import FuturesChart from "./FuturesChart";
 import CotPanel from "./CotPanel";
 import ExportSalesPanel from "./ExportSalesPanel";
 import GrainStocksPanel from "./GrainStocksPanel";
@@ -449,8 +449,8 @@ export default function CommodityDashboard({
       </div>
       {/* end bento row */}
 
-      {/* ── Interactive futures price chart (TradingView) ──────── */}
-      <PriceChartPanel commodity={commodity} commodityLabel={commodityLabel} />
+      {/* ── Our own daily candlestick futures chart ────────────── */}
+      <FuturesChart commodity={commodity} commodityLabel={commodityLabel} />
 
       {/* ── Bento row 2: Supply/Demand + Crop Progress ─────────── */}
       <div className={styles.bentoRow}>

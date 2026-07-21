@@ -541,6 +541,25 @@ export interface VegetationCounties {
   message?: string;
 }
 
+/** One daily OHLC bar. */
+export interface FuturesBar {
+  t: number;   // epoch seconds
+  o: number;
+  h: number;
+  l: number;
+  c: number;
+  v: number;
+}
+/** Daily futures history for one commodity's front-month contract. */
+export interface FuturesHistory {
+  commodity: string;
+  symbol?: string;
+  currency?: string;       // USX = cents, USD = dollars
+  updatedAt?: string | null;
+  bars: FuturesBar[];
+  message?: string;
+}
+
 /** One issuance's reading in a trend series. */
 export interface OutlookPoint {
   issued: string;
@@ -815,6 +834,9 @@ export const api = {
   getVegetationCounties: () => get<VegetationCounties>('/api/vegetation/counties'),
   // Warmer/cooler, wetter/drier trend across the last few CPC extended outlooks.
   getOutlookTrends: () => get<OutlookTrends>('/api/outlook/trends'),
+  // Daily OHLC history for a commodity's front-month futures (our own candlestick chart).
+  getFuturesHistory: (commodity: string) =>
+    get<FuturesHistory>(`/api/futures/history/${commodity}`),
   // Home-page banner animation (admin-selectable: corn | wheat | rain | none).
   getHomeBanner: () => get<{ banner: string }>('/api/site/banner'),
   setHomeBanner: async (banner: string): Promise<{ banner: string }> => {
