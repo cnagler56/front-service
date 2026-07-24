@@ -541,6 +541,50 @@ export interface VegetationCounties {
   message?: string;
 }
 
+/** Whether the current user can read / publish gated analysis. */
+export interface AnalysisAccess {
+  canRead: boolean;
+  canPublish: boolean;
+}
+/** A market-analysis post. */
+export interface AnalysisPost {
+  id: number;
+  authorUserId: number;
+  authorName?: string;
+  title: string;
+  body: string;
+  published: boolean;
+  publishedAt?: string | null;
+  updatedAt?: string | null;
+}
+/** A customer the provider granted access to. */
+export interface AnalystSubscriber {
+  id: number;
+  analystUserId: number;
+  email: string;
+  note?: string | null;
+  addedAt?: string | null;
+}
+
+/** One daily OHLC bar. */
+export interface FuturesBar {
+  t: number;   // epoch seconds
+  o: number;
+  h: number;
+  l: number;
+  c: number;
+  v: number;
+}
+/** Daily futures history for one commodity's front-month contract. */
+export interface FuturesHistory {
+  commodity: string;
+  symbol?: string;
+  currency?: string;       // USX = cents, USD = dollars
+  updatedAt?: string | null;
+  bars: FuturesBar[];
+  message?: string;
+}
+
 /** One issuance's reading in a trend series. */
 export interface OutlookPoint {
   issued: string;
@@ -625,6 +669,22 @@ const FETCH_OPTS: RequestInit = { credentials: 'include' };
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`, FETCH_OPTS);
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  return res.json() as Promise<T>;
+}
+
+/** POST/DELETE/PUT with the session cookie; surfaces the server's error message. */
+async function send<T>(path: string, method: string, body?: unknown): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    method,
+    credentials: 'include',
+    headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (!res.ok) {
+    let msg = `${res.status} ${res.statusText}`;
+    try { const j = await res.json(); msg = j.message || j.error || msg; } catch { /* ignore */ }
+    throw new Error(msg);
+  }
   return res.json() as Promise<T>;
 }
 
@@ -815,6 +875,28 @@ export const api = {
   getVegetationCounties: () => get<VegetationCounties>('/api/vegetation/counties'),
   // Warmer/cooler, wetter/drier trend across the last few CPC extended outlooks.
   getOutlookTrends: () => get<OutlookTrends>('/api/outlook/trends'),
+  // Daily OHLC history for a commodity's front-month futures (our own candlestick chart).
+  getFuturesHistory: (commodity: string) =>
+    get<FuturesHistory>(`/api/futures/history/${commodity}`),
+
+  // ── Gated market analysis ──────────────────────────────────────────
+  // Whether the current session can read / publish analysis (drives nav).
+  getAnalysisAccess: () => get<AnalysisAccess>('/api/analysis/access'),
+  // The published feed — throws 403 if the session isn't entitled.
+  getAnalysisFeed: () => get<AnalysisPost[]>('/api/analysis'),
+  // Provider console — posts.
+  getAnalystPosts: () => get<AnalysisPost[]>('/api/analyst/posts'),
+  saveAnalystPost: (input: { id?: number; title: string; body: string; publish: boolean }) =>
+    send<AnalysisPost>('/api/analyst/posts', 'POST', input),
+  deleteAnalystPost: (id: number) => send<{ ok: boolean }>(`/api/analyst/posts/${id}`, 'DELETE'),
+  // Provider console — subscribers.
+  getAnalystSubscribers: () => get<AnalystSubscriber[]>('/api/analyst/subscribers'),
+  addAnalystSubscriber: (email: string, note?: string) =>
+    send<AnalystSubscriber>('/api/analyst/subscribers', 'POST', { email, note }),
+  removeAnalystSubscriber: (id: number) => send<{ ok: boolean }>(`/api/analyst/subscribers/${id}`, 'DELETE'),
+  // Admin — grant / revoke the analyst role by email.
+  setAnalystRole: (email: string, grant: boolean) =>
+    send<{ email: string; role: string }>('/api/admin/analysts', 'POST', { email, grant }),
   // Home-page banner animation (admin-selectable: corn | wheat | rain | none).
   getHomeBanner: () => get<{ banner: string }>('/api/site/banner'),
   setHomeBanner: async (banner: string): Promise<{ banner: string }> => {
