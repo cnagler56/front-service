@@ -79,8 +79,8 @@ export default function YieldEstimatorPanel({
     {},
   );
   const [expanded, setExpanded] = useState<number | null>(null);
-  // Guests can browse, but the first attempt to edit a value prompts them to sign in.
-  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  // Anyone — signed in or not — can tune the states and see their national
+  // estimate. Signing in is only required to *submit* (lock in) that estimate.
   const { user } = useUser();
 
   // Name and state are taken straight from the account — not editable here, so
@@ -468,24 +468,7 @@ export default function YieldEstimatorPanel({
                         type="number"
                         step="0.1"
                         value={userVal}
-                        readOnly={!user}
-                        onChange={(e) => {
-                          if (user) updateYield(key, e.target.value);
-                        }}
-                        onMouseDown={
-                          !user
-                            ? (e) => {
-                                e.preventDefault();
-                                setShowAuthPrompt(true);
-                              }
-                            : undefined
-                        }
-                        onFocus={
-                          !user ? () => setShowAuthPrompt(true) : undefined
-                        }
-                        title={
-                          !user ? "Sign in to adjust estimates" : undefined
-                        }
+                        onChange={(e) => updateYield(key, e.target.value)}
                         className={`${styles.stateInput} ${modified ? styles.stateInputModified : ""}`}
                       />
                     </td>
@@ -549,16 +532,35 @@ export default function YieldEstimatorPanel({
               </div>
             )}
             {!user ? (
-              <p className={styles.empty} style={{ margin: 0 }}>
-                <Link
-                  href="/signin"
-                  style={{ color: "#3d6b2a", fontWeight: 700 }}
+              <div style={{ fontFamily: "Lato, sans-serif" }}>
+                <div
+                  style={{
+                    background: "#f0fdf4",
+                    border: "1px solid #c3e6cb",
+                    borderRadius: 4,
+                    padding: ".6rem .9rem",
+                    textAlign: "center",
+                    marginBottom: ".75rem",
+                  }}
                 >
-                  Sign in
-                </Link>{" "}
-                to lock in your guess. Your name, state, and role come from your
-                account.
-              </p>
+                  <span style={{ fontSize: ".78rem", color: "#555" }}>
+                    Your estimate:{" "}
+                  </span>
+                  <strong style={{ fontSize: "1.15rem", color: "#2c4a1e" }}>
+                    {nationalEstimate ?? "—"} {unit}
+                  </strong>
+                </div>
+                <p className={styles.empty} style={{ margin: 0 }}>
+                  <Link
+                    href="/signin"
+                    style={{ color: "#3d6b2a", fontWeight: 700 }}
+                  >
+                    Sign in
+                  </Link>{" "}
+                  to lock it in and see how you stack up against USDA and the
+                  community. Your name, state, and role come from your account.
+                </p>
+              </div>
             ) : (
               <form className={styles.form} onSubmit={handleSubmit}>
                 <div
@@ -928,59 +930,6 @@ export default function YieldEstimatorPanel({
           </div>
         </div>
       </div>
-
-      {showAuthPrompt && (
-        <div
-          className={styles.modalOverlay}
-          role="dialog"
-          aria-modal="true"
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget) setShowAuthPrompt(false);
-          }}
-        >
-          <div className={styles.modalCard}>
-            <div className={styles.modalHead}>
-              <h2>Join the USDA Challenge</h2>
-              <button
-                className={styles.modalClose}
-                onClick={() => setShowAuthPrompt(false)}
-                aria-label="Close"
-              >
-                ×
-              </button>
-            </div>
-            <div className={styles.modalBody}>
-              <p
-                style={{
-                  fontFamily: "Lato, sans-serif",
-                  color: "#555",
-                  margin: "0 0 1rem",
-                }}
-              >
-                Sign in or create a free account to adjust state yields and lock
-                in your own {commodityLabel.toLowerCase()} estimate. You can
-                keep browsing without an account.
-              </p>
-              <div className={styles.modalActions}>
-                <Link
-                  href="/signin"
-                  className={styles.btnSecondary}
-                  style={{ textDecoration: "none" }}
-                >
-                  Sign in
-                </Link>
-                <Link
-                  href="/signin?mode=signup"
-                  className={styles.btn}
-                  style={{ textDecoration: "none" }}
-                >
-                  Create account
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
