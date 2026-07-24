@@ -24,13 +24,6 @@ const DIR_META: Record<string, { arrow: string; color: string; label: string }> 
   new:    { arrow: '·', color: '#9aa88a', label: 'building trend' },
 };
 
-function leanText(t: OutlookTrend): string {
-  const c = t.latest.category, p = t.latest.prob;
-  if (c === 'ABOVE') return `${p}% above`;
-  if (c === 'BELOW') return `${p}% below`;
-  return 'equal chances';
-}
-
 function Cell({ t }: { t?: OutlookTrend }) {
   const meta = DIR_META[t?.direction ?? 'new'] ?? DIR_META.new;
   return (
@@ -65,14 +58,8 @@ function RangeBlock({ range, label, temp, precip }: {
         )}
       </div>
 
-      {/* Midwest headline */}
-      <div style={{ padding: '.75rem .9rem', fontFamily: 'Lato, sans-serif', fontSize: '.86rem', display: 'flex', flexDirection: 'column', gap: '.35rem' }}>
-        {midT && <Headline icon="🌡️" name="Temperature" t={midT} />}
-        {midP && <Headline icon="🌧️" name="Precipitation" t={midP} />}
-      </div>
-
       {/* Per-state arrow grid */}
-      <div style={{ padding: '0 .9rem .9rem' }}>
+      <div style={{ padding: '.75rem .9rem .9rem' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'Lato, sans-serif', fontSize: '.76rem' }}>
           <thead>
             <tr style={{ color: '#7a8a65', textAlign: 'left' }}>
@@ -92,20 +79,6 @@ function RangeBlock({ range, label, temp, precip }: {
           </tbody>
         </table>
       </div>
-    </div>
-  );
-}
-
-function Headline({ icon, name, t }: { icon: string; name: string; t: OutlookTrend }) {
-  const meta = DIR_META[t.direction] ?? DIR_META.new;
-  return (
-    <div style={{ display: 'flex', alignItems: 'baseline', gap: '.45rem', flexWrap: 'wrap' }}>
-      <span aria-hidden style={{ fontSize: '.95rem' }}>{icon}</span>
-      <span style={{ color: '#33402a', fontWeight: 700 }}>{name}:</span>
-      <span style={{ color: meta.color, fontWeight: 700 }}>{meta.arrow} {meta.label}</span>
-      <span style={{ color: '#7a8a65' }}>
-        (now {leanText(t)}{t.series.length > 1 ? `; ${t.series.map(s => s.category === 'EC' ? 'EC' : `${s.category === 'BELOW' ? '−' : ''}${s.prob ?? 0}`).join(' → ')}` : ''})
-      </span>
     </div>
   );
 }

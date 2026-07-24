@@ -3,7 +3,32 @@
 import { useEffect, useState } from 'react';
 import { api, AnalysisPost, AnalystSubscriber } from '@/src/lib/api';
 import { useUser } from '@/src/lib/UserContext';
+import { Markdown } from './Markdown';
 import styles from '@/src/styles/farm.module.css';
+
+/** Starter scaffold that shows the analyst the structure the reader page renders. */
+const POST_TEMPLATE = `## Bottom Line
+One or two sentences on the week's overall read.
+
+## Market Bias Board
+
+| Market | Bias | Note |
+| --- | --- | --- |
+| Corn | Sell | Nearing a sell environment above the 200-day |
+| Soybeans | Sell | Challenging June highs; watch for reversal |
+| Wheat | Sell | Overbought; shooting-star reversal |
+| Live Cattle | Buy | Oversold; reversal higher expected |
+| Crude Oil | Neutral | Gap filled; looking for a sell signal |
+
+## Corn
+- Your detailed comments…
+
+## Soybeans
+- …
+
+## Weather
+- …
+`;
 
 /**
  * Provider console (ANALYST / ADMIN): write & manage analysis posts, and manage
@@ -63,6 +88,7 @@ export default function AnalystDeskPage() {
 function PostsPanel({ onMsg }: { onMsg: (m: { ok: boolean; text: string }) => void }) {
   const [posts, setPosts] = useState<AnalysisPost[]>([]);
   const [editing, setEditing] = useState<{ id?: number; title: string; body: string } | null>(null);
+  const [preview, setPreview] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const load = () => api.getAnalystPosts().then(setPosts).catch(() => {});
@@ -99,17 +125,45 @@ function PostsPanel({ onMsg }: { onMsg: (m: { ok: boolean; text: string }) => vo
         <h2>Analysis Posts</h2>
         {!editing && (
           <button className={styles.btn} style={{ marginLeft: 'auto' }} type="button"
-            onClick={() => setEditing({ title: '', body: '' })}>+ New post</button>
+            onClick={() => { setPreview(false); setEditing({ title: '', body: '' }); }}>+ New post</button>
         )}
       </div>
       <div className={styles.sectionBody} style={{ display: 'block' }}>
         {editing && (
           <div style={{ marginBottom: '1.25rem', display: 'flex', flexDirection: 'column', gap: '.6rem' }}>
-            <input style={input} placeholder="Title" value={editing.title}
+            <input style={input} placeholder="Title (e.g. Weekly Situational Awareness — July 17)" value={editing.title}
               onChange={e => setEditing({ ...editing, title: e.target.value })} />
-            <textarea style={{ ...input, minHeight: 220, resize: 'vertical', lineHeight: 1.6 }}
-              placeholder="Your analysis… (line breaks are preserved)"
-              value={editing.body} onChange={e => setEditing({ ...editing, body: e.target.value })} />
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', flexWrap: 'wrap' }}>
+              <div style={{ display: 'inline-flex', border: '1px solid #d8d3c4', borderRadius: 4, overflow: 'hidden' }}>
+                <button type="button" onClick={() => setPreview(false)}
+                  style={{ padding: '.3rem .8rem', border: 'none', cursor: 'pointer', fontFamily: 'Lato, sans-serif', fontSize: '.8rem',
+                    background: preview ? '#fff' : '#3d6b2a', color: preview ? '#555' : '#fff' }}>Write</button>
+                <button type="button" onClick={() => setPreview(true)}
+                  style={{ padding: '.3rem .8rem', border: 'none', cursor: 'pointer', fontFamily: 'Lato, sans-serif', fontSize: '.8rem',
+                    background: preview ? '#3d6b2a' : '#fff', color: preview ? '#fff' : '#555' }}>Preview</button>
+              </div>
+              {!editing.body.trim() && (
+                <button type="button" className={styles.btnSecondary}
+                  onClick={() => setEditing({ ...editing, body: POST_TEMPLATE })}>Insert template</button>
+              )}
+              <span style={{ fontFamily: 'Lato, sans-serif', fontSize: '.76rem', color: '#8a8570' }}>
+                Formatting: <code>## Heading</code>, <code>- bullet</code>, <code>**bold**</code>, <code>&gt; quote</code>, and a{' '}
+                <strong>Bias</strong> table column shows colored buy/sell/neutral pills.
+              </span>
+            </div>
+
+            {preview ? (
+              <div style={{ ...input, minHeight: 220, background: '#fffdf9', overflow: 'auto' }}>
+                {editing.body.trim()
+                  ? <Markdown text={editing.body} />
+                  : <p style={{ color: '#999', fontFamily: 'Lato, sans-serif', margin: 0 }}>Nothing to preview yet.</p>}
+              </div>
+            ) : (
+              <textarea style={{ ...input, minHeight: 220, resize: 'vertical', lineHeight: 1.6, fontFamily: 'ui-monospace, Menlo, monospace' }}
+                placeholder="Your analysis… (Markdown supported — click Insert template to start)"
+                value={editing.body} onChange={e => setEditing({ ...editing, body: e.target.value })} />
+            )}
             <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
               <button className={styles.btn} type="button" disabled={busy} onClick={() => save(true)}>
                 {busy ? 'Saving…' : 'Publish'}
@@ -139,7 +193,7 @@ function PostsPanel({ onMsg }: { onMsg: (m: { ok: boolean; text: string }) => vo
             }}>{p.published ? 'Live' : 'Draft'}</span>
             <span style={{ fontWeight: 700, color: '#2c4a1e', flex: 1 }}>{p.title || '(untitled)'}</span>
             <button className={styles.btnSecondary} type="button"
-              onClick={() => setEditing({ id: p.id, title: p.title, body: p.body })}>Edit</button>
+              onClick={() => { setPreview(false); setEditing({ id: p.id, title: p.title, body: p.body }); }}>Edit</button>
             <button type="button" onClick={() => remove(p.id)}
               style={{ background: 'transparent', border: 'none', color: '#c0392b', cursor: 'pointer', fontSize: '.85rem' }}>
               Delete

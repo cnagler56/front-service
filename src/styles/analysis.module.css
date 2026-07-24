@@ -1,0 +1,284 @@
+/* ============================================================
+   Analysis — "The Situation Room"
+   A premium, editorial layout for the gated market-analysis page:
+   dark hero + bento overview, then light sector deep-dives where
+   each commodity shows its chart with commentary below.
+   ============================================================ */
+
+.root {
+  --ink: #0e1c08;
+  --deep: #16260d;
+  --panel: rgba(255, 255, 255, 0.045);
+  --panel-line: rgba(255, 255, 255, 0.10);
+  --lime: #9fd356;
+  --lime-soft: #c7e6a0;
+  --text: #eef4e6;
+  --muted: #aebfa0;
+  --cream: #f4f0e8;
+
+  --buy: #57b84a;
+  --buy-bg: rgba(87, 184, 74, 0.16);
+  --buy-line: rgba(87, 184, 74, 0.45);
+  --sell: #e5554b;
+  --sell-bg: rgba(229, 85, 75, 0.16);
+  --sell-line: rgba(229, 85, 75, 0.45);
+  --neutral: #9fb2c6;
+  --neutral-bg: rgba(159, 178, 198, 0.16);
+  --neutral-line: rgba(159, 178, 198, 0.42);
+
+  font-family: 'Lato', sans-serif;
+  color: var(--text);
+  background: var(--cream);
+  min-height: calc(100vh - 117px);
+}
+
+/* ── Hero ───────────────────────────────────────────────── */
+.hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(1200px 500px at 85% -10%, rgba(159, 211, 86, 0.18), transparent 60%),
+    radial-gradient(900px 600px at 5% 120%, rgba(159, 211, 86, 0.10), transparent 55%),
+    linear-gradient(160deg, #16260d 0%, #0e1c08 60%, #0a1506 100%);
+  padding: 3.2rem 2.5rem 2.2rem;
+}
+.hero::after {
+  /* subtle grain/scanline texture */
+  content: '';
+  position: absolute; inset: 0;
+  background-image: repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0 1px, transparent 1px 3px);
+  pointer-events: none;
+  opacity: 0.5;
+}
+.heroInner { position: relative; max-width: 1200px; margin: 0 auto; z-index: 1; }
+
+.kicker {
+  display: inline-flex; align-items: center; gap: .5rem;
+  font-size: .72rem; font-weight: 700; letter-spacing: .22em; text-transform: uppercase;
+  color: var(--lime); margin-bottom: .9rem;
+}
+.kicker::before {
+  content: ''; width: 26px; height: 2px; background: var(--lime); display: inline-block; border-radius: 2px;
+}
+.pulse {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--lime);
+  box-shadow: 0 0 0 0 rgba(159, 211, 86, 0.6); animation: pulse 2.2s infinite;
+}
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(159, 211, 86, 0.55); }
+  70% { box-shadow: 0 0 0 9px rgba(159, 211, 86, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(159, 211, 86, 0); }
+}
+
+.title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(2rem, 4.5vw, 3.4rem);
+  line-height: 1.02; margin: 0 0 .5rem; color: #fff; letter-spacing: -0.01em;
+}
+.metaRow {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.1rem;
+  color: var(--muted); font-size: .9rem; margin-bottom: 1.6rem;
+}
+.metaRow strong { color: var(--lime-soft); font-weight: 700; }
+.metaDot { width: 4px; height: 4px; border-radius: 50%; background: var(--muted); opacity: .6; }
+
+/* ── Bento grid ─────────────────────────────────────────── */
+.bento {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 1rem;
+}
+.tile {
+  background: var(--panel);
+  border: 1px solid var(--panel-line);
+  border-radius: 16px;
+  padding: 1.25rem 1.35rem;
+  backdrop-filter: blur(6px);
+  transition: border-color .25s ease, transform .25s ease;
+}
+.tile:hover { border-color: rgba(159, 211, 86, 0.35); transform: translateY(-2px); }
+.tileLabel {
+  font-size: .68rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--lime); margin: 0 0 .7rem;
+}
+
+.spanRead { grid-column: span 6; }
+.spanTally { grid-column: span 3; }
+.spanSignals { grid-column: span 3; }
+.spanBoard { grid-column: span 12; }
+
+.readQuote {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1.32rem; line-height: 1.45; color: #f4f8ee; margin: 0;
+}
+.readQuote .accent { color: var(--lime); }
+
+/* Bias tally — stacked bar + counts */
+.tallyBar {
+  display: flex; height: 12px; border-radius: 999px; overflow: hidden; margin-bottom: 1rem;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.tallySeg { height: 100%; }
+.tallyRows { display: flex; flex-direction: column; gap: .5rem; }
+.tallyRow { display: flex; align-items: center; gap: .55rem; font-size: .86rem; }
+.tallyCount { margin-left: auto; font-weight: 800; font-variant-numeric: tabular-nums; font-size: 1.05rem; }
+.swatch { width: 11px; height: 11px; border-radius: 3px; }
+
+/* Strongest signals */
+.signalStack { display: flex; flex-direction: column; gap: .7rem; }
+.signalCard {
+  border-radius: 11px; padding: .7rem .8rem; border-left: 3px solid;
+  background: rgba(255,255,255,0.03);
+}
+.signalCard h4 { margin: 0 0 .12rem; font-size: .95rem; display: flex; align-items: center; gap: .45rem; color: #fff; }
+.signalCard p { margin: 0; font-size: .78rem; color: var(--muted); line-height: 1.4; }
+
+/* Bias board — market chips */
+.board {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: .6rem;
+}
+.chip {
+  display: flex; align-items: center; gap: .7rem;
+  padding: .6rem .75rem; border-radius: 11px;
+  background: rgba(255,255,255,0.035); border: 1px solid var(--panel-line);
+  transition: background .2s ease, border-color .2s ease;
+}
+.chip:hover { background: rgba(255,255,255,0.07); border-color: rgba(159,211,86,0.3); }
+.chipBody { min-width: 0; }
+.chipName { font-size: .84rem; font-weight: 700; color: #f2f7ea; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chipNote { font-size: .7rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── Bias pill (shared) ─────────────────────────────────── */
+.pill {
+  display: inline-flex; align-items: center; gap: .3rem;
+  font-size: .66rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+  padding: .22rem .55rem; border-radius: 999px; white-space: nowrap; flex-shrink: 0;
+}
+.pillDot { width: 6px; height: 6px; border-radius: 50%; }
+.buy { color: var(--buy); background: var(--buy-bg); border: 1px solid var(--buy-line); }
+.sell { color: var(--sell); background: var(--sell-bg); border: 1px solid var(--sell-line); }
+.neutral { color: var(--neutral); background: var(--neutral-bg); border: 1px solid var(--neutral-line); }
+.buy .pillDot { background: var(--buy); }
+.sell .pillDot { background: var(--sell); }
+.neutral .pillDot { background: var(--neutral); }
+
+/* Neutral pill that only *leans* — label stays "Neutral", subtly tinted so the
+   directional tilt reads without over-claiming a buy/sell. */
+.leanBearish { background: rgba(229, 85, 75, 0.10); border-color: rgba(229, 85, 75, 0.30); }
+.leanBearish .pillDot { background: var(--sell); }
+.leanBullish { background: rgba(87, 184, 74, 0.10); border-color: rgba(87, 184, 74, 0.30); }
+.leanBullish .pillDot { background: var(--buy); }
+
+/* ── Section nav (sticky) ───────────────────────────────── */
+.nav {
+  position: sticky; top: 0; z-index: 30;
+  background: rgba(14, 28, 8, 0.92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(159,211,86,0.18);
+}
+.navInner {
+  max-width: 1200px; margin: 0 auto; padding: .1rem 2.5rem;
+  display: flex; gap: .3rem; overflow-x: auto;
+}
+.navLink {
+  padding: .8rem .9rem; font-size: .74rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--muted); text-decoration: none; white-space: nowrap;
+  border-bottom: 2px solid transparent; transition: color .2s ease, border-color .2s ease;
+}
+.navLink:hover { color: var(--lime-soft); }
+.navLinkActive { color: #fff; border-bottom-color: var(--lime); }
+
+/* ── Content (light) ────────────────────────────────────── */
+.content { max-width: 1200px; margin: 0 auto; padding: 2.4rem 2.5rem 3.5rem; }
+.sector { margin-bottom: 3rem; scroll-margin-top: 64px; }
+.sectorHead { margin-bottom: 1.4rem; }
+.sectorTitle {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1.7rem; color: #1a2e0f; margin: 0 0 .3rem;
+  display: flex; align-items: center; gap: .7rem;
+}
+.sectorTitle::before { content: ''; width: 5px; height: 26px; background: #3d6b2a; border-radius: 3px; }
+.sectorBlurb { color: #5c6a4c; font-size: .95rem; margin: 0; max-width: 720px; }
+
+/* Market card */
+.card {
+  background: #fff; border: 1px solid #e2ddd0; border-radius: 14px; overflow: hidden;
+  box-shadow: 0 4px 24px rgba(20, 38, 13, 0.06); margin-bottom: 1.3rem;
+}
+.cardHead {
+  display: flex; align-items: center; gap: .8rem; flex-wrap: wrap;
+  padding: 1rem 1.25rem; border-bottom: 1px solid #eee7d8;
+  background: linear-gradient(180deg, #fbfaf5, #fff);
+}
+.cardTitle { font-family: 'Playfair Display', Georgia, serif; font-size: 1.25rem; color: #1a2e0f; margin: 0; }
+.cardHeadline { flex-basis: 100%; color: #6a7757; font-size: .86rem; margin: -.2rem 0 0; }
+.levels { display: flex; gap: .45rem; flex-wrap: wrap; margin-left: auto; }
+.level {
+  display: flex; flex-direction: column; gap: 1px;
+  padding: .3rem .6rem; background: #f4f0e6; border: 1px solid #e6dfcd; border-radius: 8px;
+}
+.levelLabel { font-size: .58rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #9a8f74; }
+.levelValue { font-size: .82rem; font-weight: 700; color: #33402a; white-space: nowrap; }
+
+.chartWrap { padding: .35rem .5rem 0; }
+.commentary {
+  padding: 1.1rem 1.35rem 1.3rem;
+  border-top: 1px solid #f1ebdd;
+  background:
+    linear-gradient(90deg, var(--edge, #3d6b2a) 0 3px, transparent 3px);
+}
+.commentaryInner { padding-left: .6rem; }
+
+/* Note card (no chart) — accent by bias */
+.note {
+  background: #fff; border: 1px solid #e2ddd0; border-radius: 14px;
+  border-left: 4px solid var(--edge, #9fb2c6);
+  padding: 1.1rem 1.35rem; margin-bottom: 1.1rem;
+  box-shadow: 0 3px 16px rgba(20, 38, 13, 0.05);
+}
+.noteHead { display: flex; align-items: center; gap: .7rem; flex-wrap: wrap; margin-bottom: .5rem; }
+.noteTitle { font-family: 'Playfair Display', Georgia, serif; font-size: 1.12rem; color: #1a2e0f; margin: 0; }
+
+.noteGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.1rem; }
+
+/* ── Intel bento (light) ────────────────────────────────── */
+.intel { display: grid; grid-template-columns: repeat(12, 1fr); gap: 1.1rem; }
+.intelTile {
+  border-radius: 14px; padding: 1.3rem 1.4rem;
+  background: #fff; border: 1px solid #e2ddd0;
+  box-shadow: 0 3px 16px rgba(20, 38, 13, 0.05);
+}
+.intelWeather { grid-column: span 5; }
+.intelLogistics { grid-column: span 7; }
+.intelBig { grid-column: span 12; background: linear-gradient(135deg, #16260d, #0e1c08); border: none; color: var(--text); }
+.intelBig .intelTitle { color: #fff; }
+.intelBig :global(strong) { color: var(--lime-soft); }
+.intelHead { display: flex; align-items: center; gap: .6rem; margin-bottom: .7rem; }
+.intelIcon {
+  width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; font-size: 1.15rem;
+  background: #f0f4e8; border: 1px solid #e0e7d2;
+}
+.intelBig .intelIcon { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); }
+.intelTitle { font-family: 'Playfair Display', Georgia, serif; font-size: 1.2rem; color: #1a2e0f; margin: 0; }
+
+/* markdown spacing inside light tiles */
+.mdLight { color: #33402a; font-size: .92rem; }
+
+/* ── Gate / states ──────────────────────────────────────── */
+.stateWrap { max-width: 620px; margin: 0 auto; padding: 4rem 2rem; text-align: center; color: var(--muted); }
+.stateWrap h2 { font-family: 'Playfair Display', Georgia, serif; color: #fff; font-size: 1.6rem; }
+.stateWrap a { color: var(--lime); font-weight: 700; }
+
+/* ── Reveal on scroll ───────────────────────────────────── */
+.reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
+.revealed { opacity: 1; transform: none; }
+
+/* ── Responsive ─────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .spanRead, .spanTally, .spanSignals { grid-column: span 12; }
+  .intelWeather, .intelLogistics { grid-column: span 12; }
+  .hero { padding: 2.2rem 1.3rem 1.6rem; }
+  .content { padding: 1.6rem 1.3rem 2.5rem; }
+  .navInner { padding: 0 1.3rem; }
+  .levels { margin-left: 0; flex-basis: 100%; }
+}
