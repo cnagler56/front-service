@@ -566,6 +566,38 @@ export interface AnalystSubscriber {
   addedAt?: string | null;
 }
 
+/** X auto-poster status + the rotation of promotable pages. */
+export interface SocialStatus {
+  enabled: boolean;
+  xConfigured: boolean;
+  aiConfigured: boolean;
+  siteUrl: string;
+  schedule: string;
+  pages: { key: string; label: string; path: string }[];
+}
+/** A composed (previewed) post before it's sent. */
+export interface SocialPreview {
+  pageKey: string;
+  pageLabel: string;
+  url: string;
+  text: string;
+  length: number;
+  aiUsed: boolean;
+}
+/** A logged post attempt. */
+export interface SocialPost {
+  id: number;
+  pageKey: string;
+  pageLabel: string;
+  url: string;
+  text: string;
+  status: 'POSTED' | 'DRYRUN' | 'FAILED';
+  slot: string;
+  tweetId?: string | null;
+  note?: string | null;
+  createdAt?: string | null;
+}
+
 /** One daily OHLC bar. */
 export interface FuturesBar {
   t: number;   // epoch seconds
@@ -897,6 +929,13 @@ export const api = {
   // Admin — grant / revoke the analyst role by email.
   setAnalystRole: (email: string, grant: boolean) =>
     send<{ email: string; role: string }>('/api/admin/analysts', 'POST', { email, grant }),
+  // Admin — X auto-poster.
+  getSocialStatus: () => get<SocialStatus>('/api/admin/social/status'),
+  getSocialLog: () => get<SocialPost[]>('/api/admin/social/log'),
+  previewSocialPost: (pageKey?: string) =>
+    send<SocialPreview>('/api/admin/social/preview', 'POST', { pageKey: pageKey ?? null }),
+  postSocialNow: (pageKey?: string) =>
+    send<SocialPost>('/api/admin/social/post-now', 'POST', { pageKey: pageKey ?? null }),
   // Home-page banner animation (admin-selectable: corn | wheat | rain | none).
   getHomeBanner: () => get<{ banner: string }>('/api/site/banner'),
   setHomeBanner: async (banner: string): Promise<{ banner: string }> => {
