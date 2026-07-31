@@ -575,6 +575,13 @@ export interface SocialStatus {
   schedule: string;
   pages: { key: string; label: string; path: string }[];
 }
+/** Result of the non-destructive X credential check. */
+export interface SocialVerify {
+  configured: boolean;
+  ok: boolean;
+  handle?: string;
+  error?: string;
+}
 /** A composed (previewed) post before it's sent. */
 export interface SocialPreview {
   pageKey: string;
@@ -931,6 +938,7 @@ export const api = {
     send<{ email: string; role: string }>('/api/admin/analysts', 'POST', { email, grant }),
   // Admin — X auto-poster.
   getSocialStatus: () => get<SocialStatus>('/api/admin/social/status'),
+  verifyXConnection: () => get<SocialVerify>('/api/admin/social/verify'),
   getSocialLog: () => get<SocialPost[]>('/api/admin/social/log'),
   previewSocialPost: (pageKey?: string) =>
     send<SocialPreview>('/api/admin/social/preview', 'POST', { pageKey: pageKey ?? null }),
