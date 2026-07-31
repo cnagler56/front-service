@@ -18,7 +18,7 @@ export default function SocialAdminPage() {
   const [log, setLog] = useState<SocialPost[]>([]);
   const [pageKey, setPageKey] = useState('');       // '' = next in rotation
   const [preview, setPreview] = useState<SocialPreview | null>(null);
-  const [busy, setBusy] = useState<'preview' | 'post' | null>(null);
+  const [busy, setBusy] = useState<'preview' | 'post' | 'verify' | null>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   const loadLog = () => api.getSocialLog().then(setLog).catch(() => {});
@@ -32,6 +32,17 @@ export default function SocialAdminPage() {
     setBusy('preview'); setMsg(null);
     try { setPreview(await api.previewSocialPost(pageKey || undefined)); }
     catch (e) { setMsg({ ok: false, text: e instanceof Error ? e.message : 'Preview failed.' }); }
+    finally { setBusy(null); }
+  }
+
+  async function doVerify() {
+    setBusy('verify'); setMsg(null);
+    try {
+      const r = await api.verifyXConnection();
+      setMsg(r.ok
+        ? { ok: true, text: `X connection OK — authenticated as @${r.handle}. No tweet was sent.` }
+        : { ok: false, text: `X check failed: ${r.error}` });
+    } catch (e) { setMsg({ ok: false, text: e instanceof Error ? e.message : 'Verify failed.' }); }
     finally { setBusy(null); }
   }
 
@@ -78,12 +89,16 @@ export default function SocialAdminPage() {
               <Chip on={!!status?.xConfigured} onText="X credentials set" offText="X credentials missing" />
               <Chip on={!!status?.aiConfigured} onText="AI copy on" offText="AI copy off (templates)" />
             </div>
-            <p style={{ fontFamily: 'Lato, sans-serif', fontSize: '.88rem', color: '#555', lineHeight: 1.6, margin: 0 }}>
+            <p style={{ fontFamily: 'Lato, sans-serif', fontSize: '.88rem', color: '#555', lineHeight: 1.6, margin: '0 0 1rem' }}>
               {live
                 ? <>Live — posting <strong>{status?.schedule}</strong> to X, rotating through {status?.pages.length} pages.</>
                 : <>Currently in <strong>dry-run</strong>: it composes and logs posts on schedule ({status?.schedule}) but doesn&rsquo;t send.
                     Set the X API keys on the backend and <code>SOCIAL_POSTING_ENABLED=true</code> to go live.</>}
             </p>
+            <button className={styles.btnSecondary} type="button" disabled={busy !== null} onClick={doVerify}
+              title="Calls GET /2/users/me — confirms your keys work without posting anything">
+              {busy === 'verify' ? 'Checking…' : 'Verify X connection'}
+            </button>
           </div>
         </div>
 
