@@ -99,6 +99,9 @@ export default function CropSummaryPage() {
         ))}
       </div>
 
+      {/* AI recap — all crops, shown once regardless of the crop selected below */}
+      <CombinedRecap year={year} />
+
       {loading && <p className={styles.loading}>Loading report summary…</p>}
       {error && <p className={styles.error}>{error}</p>}
 
@@ -116,9 +119,6 @@ export default function CropSummaryPage() {
                 {data.stateCount} states · acre-weighted national figures
               </span>
             </div>
-
-            {/* AI recap */}
-            <Commentary commodity={commodity.key} year={year} />
 
             {/* National headline cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '1rem', marginBottom: '1.75rem' }}>
@@ -146,8 +146,8 @@ export default function CropSummaryPage() {
   );
 }
 
-/* ── AI-generated recap ───────────────────────────────────────────── */
-function Commentary({ commodity, year }: { commodity: string; year?: number }) {
+/* ── AI-generated combined recap (all crops, one write-up) ────────── */
+function CombinedRecap({ year }: { year?: number }) {
   const [data, setData] = useState<CropCommentary | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -155,33 +155,33 @@ function Commentary({ commodity, year }: { commodity: string; year?: number }) {
     let live = true;
     setLoading(true);
     setData(null);
-    api.getCropCommentary(commodity, year)
+    api.getCombinedCropCommentary(year)
       .then(d => { if (live) setData(d); })
       .catch(() => { if (live) setData(null); })
       .finally(() => { if (live) setLoading(false); });
     return () => { live = false; };
-  }, [commodity, year]);
+  }, [year]);
 
-  // Hide entirely if the model isn't configured / the call failed.
+  // Hide entirely if the model isn't configured / the call failed / no data yet.
   if (!loading && (!data || !data.available)) return null;
 
   return (
     <div style={{
       background: '#f6f8f1', border: '1px solid #d8e3c8', borderLeft: '4px solid #8fbc45',
-      borderRadius: 8, padding: '1rem 1.15rem', margin: '0 0 1.5rem', fontFamily: 'Lato, sans-serif',
+      borderRadius: 8, padding: '1rem 1.15rem', margin: '0 0 1.25rem', fontFamily: 'Lato, sans-serif',
     }}>
       <div style={{
         fontSize: '.72rem', textTransform: 'uppercase', letterSpacing: '.08em',
         color: '#7a8a65', fontWeight: 700, marginBottom: '.4rem',
       }}>
-        ✨ AI Recap
+        ✨ AI Recap — All Crops
       </div>
       {loading ? (
         <p style={{ margin: 0, color: '#8aa06a', fontSize: '.9rem', fontStyle: 'italic' }}>
           Generating analysis…
         </p>
       ) : (
-        <p style={{ margin: 0, color: '#2c4a1e', fontSize: '.95rem', lineHeight: 1.6 }}>
+        <p style={{ margin: 0, color: '#2c4a1e', fontSize: '.95rem', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
           {data!.commentary}
         </p>
       )}

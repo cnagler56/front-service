@@ -965,6 +965,9 @@ export const api = {
   // AI-generated recap of the Crop Production report (grounded in the summary figures).
   getCropCommentary: (commodity: string, year?: number) =>
     get<CropCommentary>(`/api/crop-summary/${commodity}/commentary${year ? `?year=${year}` : ''}`),
+  // One AI recap covering all crops (corn, soybeans, wheat) in a single write-up.
+  getCombinedCropCommentary: (year?: number) =>
+    get<CropCommentary>(`/api/crop-summary/all/commentary${year ? `?year=${year}` : ''}`),
   saveReportDates: async (reportKey: string, dates: string[]): Promise<ReportReleaseDate[]> => {
     const res = await fetch(`${BASE}/api/admin/report-dates`, {
       method: 'POST', credentials: 'include',
