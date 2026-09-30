@@ -7,8 +7,30 @@ import styles from './Home.module.css';
  * Row of futures price cards: Corn, Soybeans, Wheat, Live Cattle, Lean Hogs.
  * Each card shows the front contract big, with the next 4 deferred contracts
  * in a compact table below.
- * Auto-refreshes every 5 minutes (server caches for 5 min too).
+ * Auto-refreshes at the top of each hour, 9am–2pm Central (matching the server's
+ * refresh window); no polling outside those hours.
  */
+const REFRESH_FIRST_HOUR = 9;
+const REFRESH_LAST_HOUR = 14;
+const REFRESH_DELAY_MS = 60 * 1000;  // just past the hour, so the server cache has rolled over
+
+const centralHour = (date) =>
+  Number(new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Chicago', hour: 'numeric', hourCycle: 'h23',
+  }).format(date));
+
+/** Milliseconds until the next top-of-hour that falls inside the Central refresh window. */
+const msUntilNextRefresh = () => {
+  const now = new Date();
+  const next = new Date(now);
+  next.setMinutes(0, 0, 0);
+  for (let i = 0; i < 25; i++) {
+    next.setTime(next.getTime() + 60 * 60 * 1000);
+    const h = centralHour(next);
+    if (h >= REFRESH_FIRST_HOUR && h <= REFRESH_LAST_HOUR) break;
+  }
+  return next.getTime() - now.getTime() + REFRESH_DELAY_MS;
+};
 const CommodityPrices = () => {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,8 +50,12 @@ const CommodityPrices = () => {
 
   useEffect(() => {
     load();
-    const id = setInterval(load, 5 * 60 * 1000);
-    return () => clearInterval(id);
+    let id;
+    const schedule = () => {
+      id = setTimeout(() => { load(); schedule(); }, msUntilNextRefresh());
+    };
+    schedule();
+    return () => clearTimeout(id);
   }, []);
 
   return (
