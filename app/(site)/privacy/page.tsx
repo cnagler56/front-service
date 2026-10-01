@@ -1,6 +1,7 @@
 import PrivacyPage from '@/src/components/legal/PrivacyPage';
+import { pageMetadata } from '@/src/lib/seo';
 
-export const metadata = { title: 'Privacy Policy — Just4Ag' };
+export const metadata = pageMetadata('/privacy');
 
 export default function Page() {
   return <PrivacyPage />;

@@ -1,9 +1,9 @@
-'use client';
-
 import LivestockDashboard from '@/src/components/commodity/LivestockDashboard';
 import styles from '@/src/styles/farm.module.css';
+import PageAbout from '@/src/components/seo/PageAbout';
+import { pageMetadata } from '@/src/lib/seo';
 
-export default function CattlePage() {
+function PageContent() {
   return (
     <div className={styles.page}>
       <LivestockDashboard
@@ -15,5 +15,16 @@ export default function CattlePage() {
         extraPricesGroupName="Feeder Cattle"
       />
     </div>
+  );
+}
+
+export const metadata = pageMetadata('/cattle');
+
+export default function Page() {
+  return (
+    <>
+      <PageContent />
+      <PageAbout path="/cattle" />
+    </>
   );
 }

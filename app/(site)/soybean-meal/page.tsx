@@ -1,9 +1,9 @@
-'use client';
-
 import CommodityDashboard from '@/src/components/commodity/CommodityDashboard';
 import styles from '@/src/styles/farm.module.css';
+import PageAbout from '@/src/components/seo/PageAbout';
+import { pageMetadata } from '@/src/lib/seo';
 
-export default function SoybeanMealPage() {
+function PageContent() {
   return (
     <div className={styles.page}>
       <CommodityDashboard
@@ -13,5 +13,16 @@ export default function SoybeanMealPage() {
         crushProduct
       />
     </div>
+  );
+}
+
+export const metadata = pageMetadata('/soybean-meal');
+
+export default function Page() {
+  return (
+    <>
+      <PageContent />
+      <PageAbout path="/soybean-meal" />
+    </>
   );
 }

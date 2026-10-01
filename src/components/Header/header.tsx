@@ -84,10 +84,11 @@ const Header = () => {
       `}</style>
 
       <header className="farm-header">
-        <h1 className="farm-site-title">
+        {/* Not an <h1>: each page has its own, and the logo would compete with it for search engines. */}
+        <div className="farm-site-title">
           <span className="leaf-icon">🌿</span>
           Just4Ag
-        </h1>
+        </div>
         {welcomeMessage && <div className="farm-welcome">{welcomeMessage}</div>}
       </header>
     </>

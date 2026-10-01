@@ -1,5 +1,8 @@
 import { Suspense } from 'react';
 import ResetPasswordPage from '@/src/components/auth/ResetPasswordPage';
+import { NOINDEX } from '@/src/lib/seo';
+
+export const metadata = NOINDEX;
 
 /**
  * ResetPasswordPage uses useSearchParams() to read ?token — which the App

@@ -1,9 +1,9 @@
-'use client';
-
 import CommodityDashboard from '@/src/components/commodity/CommodityDashboard';
 import styles from '@/src/styles/farm.module.css';
+import PageAbout from '@/src/components/seo/PageAbout';
+import { pageMetadata } from '@/src/lib/seo';
 
-export default function WheatPage() {
+function PageContent() {
   return (
     <div className={styles.page}>
       <CommodityDashboard
@@ -13,5 +13,16 @@ export default function WheatPage() {
         secondaryPricesGroupName="KC Wheat"
       />
     </div>
+  );
+}
+
+export const metadata = pageMetadata('/wheat');
+
+export default function Page() {
+  return (
+    <>
+      <PageContent />
+      <PageAbout path="/wheat" />
+    </>
   );
 }

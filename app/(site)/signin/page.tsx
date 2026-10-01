@@ -1,5 +1,8 @@
 import { Suspense } from 'react';
 import SignInPage from '@/src/components/auth/SignInPage';
+import { NOINDEX } from '@/src/lib/seo';
+
+export const metadata = NOINDEX;
 
 /**
  * SignInPage uses useSearchParams() (to read ?reason=inactivity), which the

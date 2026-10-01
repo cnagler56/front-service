@@ -1,9 +1,9 @@
-'use client';
-
 import LivestockDashboard from '@/src/components/commodity/LivestockDashboard';
 import styles from '@/src/styles/farm.module.css';
+import PageAbout from '@/src/components/seo/PageAbout';
+import { pageMetadata } from '@/src/lib/seo';
 
-export default function HogsPage() {
+function PageContent() {
   return (
     <div className={styles.page}>
       <LivestockDashboard
@@ -14,5 +14,16 @@ export default function HogsPage() {
         inventoryDescription="Lean Hogs futures, CFTC positioning, the quarterly Hogs & Pigs report (breeding vs. market), and the NASS inventory snapshot."
       />
     </div>
+  );
+}
+
+export const metadata = pageMetadata('/hogs');
+
+export default function Page() {
+  return (
+    <>
+      <PageContent />
+      <PageAbout path="/hogs" />
+    </>
   );
 }

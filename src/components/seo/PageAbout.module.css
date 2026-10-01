@@ -1,0 +1,30 @@
+/* Sits under a page's dashboard on the same parchment background as .page. */
+.wrap {
+  background: #f4f0e8;
+  padding: 0 2.5rem 2rem;
+  font-family: 'Lato', sans-serif;
+}
+
+.card {
+  max-width: 60rem;
+  border-top: 1px solid #ddd8cc;
+  padding-top: 1.25rem;
+}
+
+.card h2 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1rem;
+  color: #2c4a1e;
+  margin: 0 0 .5rem;
+}
+
+.card p {
+  font-size: .85rem;
+  line-height: 1.6;
+  color: #555;
+  margin: 0 0 .5rem;
+}
+
+@media (max-width: 640px) {
+  .wrap { padding: 0 1rem 1.5rem; }
+}
