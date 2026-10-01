@@ -13,13 +13,13 @@ export default function CalculatorsPage() {
       <div className={styles.section}>
         <div className={styles.sectionHead}>
           <h1 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: '1.25rem', color: '#f0f7e6', margin: 0 }}>
-            Farm Calculators
+            Calculators
           </h1>
         </div>
         <div className={styles.sectionBody}>
           <p style={{ fontFamily: 'Lato, sans-serif', fontSize: '.85rem', color: '#666', margin: 0 }}>
-            Quick math you reach for through the season — seed populations, sprayer rates,
-            grain shrink, and loan payments. All results update as you type.
+            Quick, free calculators for loan payments, seed populations, sprayer rates,
+            and grain shrink. All results update as you type.
           </p>
         </div>
       </div>

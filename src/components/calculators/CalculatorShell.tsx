@@ -41,7 +41,7 @@ export default function CalculatorShell({ path, heading, howItWorks, children }:
       </div>
 
       <div className={styles.section}>
-        <div className={styles.sectionHead}><h2>More farm calculators</h2></div>
+        <div className={styles.sectionHead}><h2>More calculators</h2></div>
         <div className={styles.sectionBody}>
           <ul style={{ ...prose, margin: 0, paddingLeft: '1.1rem' }}>
             {others.map(c => (

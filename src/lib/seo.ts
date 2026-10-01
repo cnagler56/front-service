@@ -300,10 +300,10 @@ export const PAGES: Record<string, PageSeo> = {
 
   /* ── tools & community ──────────────────────────────────────────────── */
   '/calculators': {
-    title: 'Farm Calculators: Seed, Sprayer, Shrink, Loans',
-    description: 'Free farm calculators: seed population, sprayer GPA, grain shrink, and farm loan payments.',
+    title: 'Calculators: Loan, Seed, Sprayer, Grain Shrink',
+    description: 'Free calculators: loan payments with an amortization schedule, seed population, sprayer GPA, and grain shrink.',
     about: [
-      'Quick math you reach for through the season. Each calculator runs in your browser and updates as you type.',
+      'Quick, free calculators. Each one runs in your browser and updates as you type.',
     ],
     changeFrequency: 'monthly',
     priority: 0.8,
@@ -336,10 +336,10 @@ export const PAGES: Record<string, PageSeo> = {
     priority: 0.7,
   },
   '/calculators/loan': {
-    title: 'Farm Loan Calculator with Amortization Schedule',
-    description: 'Free farm loan calculator: monthly payment, total interest and a full month-by-month amortization schedule for land or equipment loans.',
+    title: 'Loan Calculator with Amortization Schedule',
+    description: 'Free loan calculator: monthly payment, total interest and a full month-by-month amortization schedule for a mortgage, car, personal or business loan.',
     about: [
-      'Estimate the monthly payment and total interest on a land, equipment or operating loan, and view the full month-by-month amortization schedule.',
+      'Estimate the monthly payment and total interest on any fixed-rate loan, whether it\'s a mortgage, car loan, personal loan or business loan, and view the full month-by-month amortization schedule.',
     ],
     changeFrequency: 'yearly',
     priority: 0.7,
